@@ -1,0 +1,34 @@
+# Dreamy Tales
+
+> Personalised illustrated bedtime short stories delivered nightly to South African families at 6pm SAST.
+
+Dreamy Tales is a subscription service for parents of children aged 3–12. Each evening, a custom AI-written bedtime short story with illustrations arrives as a PDF in your inbox — featuring your child's name, interests, and South African settings.
+
+## Services
+
+- Nightly personalised bedtime short stories (30+ per month)
+- Custom illustrations and child-specific storylines
+- All 11 official South African languages (English, Afrikaans, isiZulu, isiXhosa, and more)
+- Illustrated PDF delivered by email at 6pm South African time
+- Parent dashboard to download past stories and manage subscription
+
+## Pricing
+
+- R99/month for the first child
+- R50/month for each additional child
+- 7-day free trial
+- Annual option: pay 11 months, get 12 (one month free)
+- Secure payments via PayFast (South Africa)
+
+## Links
+
+- [Homepage](https://dreamytales.co.za/)
+- [Start free trial](https://dreamytales.co.za/signup)
+- [Login](https://dreamytales.co.za/login)
+- [Terms & Conditions](https://dreamytales.co.za/terms)
+- [Privacy Policy](https://dreamytales.co.za/privacy)
+- [Contact](mailto:Admin@dreamytales.co.za)
+
+## Optional
+
+- [Full site details for AI assistants](https://dreamytales.co.za/llms-full.txt)

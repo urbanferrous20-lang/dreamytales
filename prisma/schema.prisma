@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  children     ChildProfile[]
+  subscription Subscription?
+  storyReviews StoryReview[]
+  siteReview   SiteReview?
+}
+
+model StoryReview {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, storyId])
+}
+
+model SiteReview {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChildProfile {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  age            Int
+  pronouns       String
+  interests      String
+  favoriteColors String
+  favoriteToy    String?
+  petInfo        String?
+  siblingNames   String?
+  bestFriend     String?
+  favoritePlace  String?
+  province       String   @default("Gauteng")
+  cityOrTown     String   @default("Johannesburg")
+  customCity     String?
+  suburb         String?
+  topicsToAvoid  String?
+  storyMood      String   @default("gentle")
+  moralTheme     String?
+  readAloudBy     String   @default("parent")
+  language       String   @default("english")
+  characterBible String?
+  styleAnchorUrl String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  stories        Story[]
+}
+
+model Subscription {
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status             String    @default("pending")
+  payfastToken       String?
+  recurringAmount    Float
+  childCount         Int       @default(1)
+  billingInterval    String    @default("monthly")
+  trialEndsAt        DateTime?
+  nextBillingDate    DateTime?
+  cancelRequestedAt  DateTime?
+  accessEndsAt       DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Story {
+  id        String       @id @default(cuid())
+  childId   String
+  child     ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
+  title     String
+  summary   String
+  pdfPath   String
+  storyDate DateTime
+  sentAt    DateTime?
+  createdAt DateTime     @default(now())
+  reviews   StoryReview[]
+
+  @@unique([childId, storyDate])
+}
+
+model PendingSignup {
+  id        String   @id @default(cuid())
+  email     String
+  name      String
+  passwordHash String
+  childrenJson String
+  billingInterval String @default("monthly")
+  agreedToTerms Boolean @default(false)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
