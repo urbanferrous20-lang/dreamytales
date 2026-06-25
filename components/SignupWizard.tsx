@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { trackAnalyticsEvent } from "@/components/AnalyticsTracker";
 import {
   INTEREST_OPTIONS,
   type BillingInterval,
@@ -46,6 +47,10 @@ export function SignupWizard() {
   const [children, setChildren] = useState<ChildProfileInput[]>([{ ...EMPTY_CHILD }]);
   const [activeChild, setActiveChild] = useState(0);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
+
+  useEffect(() => {
+    trackAnalyticsEvent("signup_start");
+  }, []);
 
   function updateChild(index: number, updates: Partial<ChildProfileInput>) {
     setChildren((prev) => prev.map((c, i) => (i === index ? { ...c, ...updates } : c)));

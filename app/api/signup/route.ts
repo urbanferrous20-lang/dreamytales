@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { signupSchema } from "@/lib/types/child";
 import { hashPassword } from "@/lib/auth";
+import { ANALYTICS_EVENTS, logAnalyticsEventFromRequest } from "@/lib/analytics";
 import { prisma } from "@/lib/db";
 import { recurringCharge, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
 import {
@@ -48,6 +49,12 @@ export async function POST(request: NextRequest) {
         agreedToTerms: true,
         expiresAt: addDays(new Date(), 1),
       },
+    });
+
+    await logAnalyticsEventFromRequest(request, {
+      eventType: ANALYTICS_EVENTS.SIGNUP_SUBMIT,
+      path: "/signup",
+      metadata: { signupId, childCount: children.length, billingInterval },
     });
 
     const formData = buildSubscriptionFormData({

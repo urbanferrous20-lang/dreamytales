@@ -1,6 +1,11 @@
 import "server-only";
 import OpenAI from "openai";
 import { getIllustrationContentPolicy } from "@/lib/story-content-policy";
+import {
+  ILLUSTRATION_OPENAI_QUALITY,
+  ILLUSTRATION_OPENAI_SIZE,
+} from "@/lib/ai/illustration-settings";
+import { optimizeIllustration } from "@/lib/image-optimize";
 
 let client: OpenAI | null = null;
 
@@ -19,14 +24,15 @@ export async function generateIllustration(prompt: string): Promise<Buffer> {
   const response = await openai.images.generate({
     model: "gpt-image-1-mini",
     prompt,
-    size: "1024x1024",
-    quality: "medium",
+    size: ILLUSTRATION_OPENAI_SIZE,
+    quality: ILLUSTRATION_OPENAI_QUALITY,
     n: 1,
   });
 
   const b64 = response.data?.[0]?.b64_json;
   if (!b64) throw new Error("Image generation failed");
-  return Buffer.from(b64, "base64");
+  const raw = Buffer.from(b64, "base64");
+  return optimizeIllustration(raw);
 }
 
 export function buildIllustrationPrompt(scene: {

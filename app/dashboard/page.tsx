@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getLanguageLabel } from "@/lib/sa-languages";
+import { isPdfStored } from "@/lib/storage-config";
 import {
   billingCadenceLabel,
   billingIntervalLabel,
@@ -150,12 +151,16 @@ export default async function DashboardPage() {
                       <li key={story.id} className="text-sm">
                         <div className="flex justify-between items-start gap-4">
                           <span className="text-navy">{story.title}</span>
-                          <a
-                            href={`/api/stories/${story.id}/download`}
-                            className="text-gold hover:underline shrink-0"
-                          >
-                            Download PDF
-                          </a>
+                          {isPdfStored(story.pdfPath) ? (
+                            <a
+                              href={`/api/stories/${story.id}/download`}
+                              className="text-gold hover:underline shrink-0"
+                            >
+                              Download PDF
+                            </a>
+                          ) : (
+                            <span className="text-navy/40 shrink-0 text-xs">In your email</span>
+                          )}
                         </div>
                         <StoryReviewForm
                           storyId={story.id}

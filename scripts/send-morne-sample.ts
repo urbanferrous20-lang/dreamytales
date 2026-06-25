@@ -8,12 +8,16 @@ config({ path: ".env" });
 
 import fs from "fs/promises";
 import path from "path";
-import { Resend } from "resend";
+import { isSmtpConfigured, sendPdfEmail } from "../lib/smtp";
 import OpenAI from "openai";
+import { optimizeIllustration } from "../lib/image-optimize";
+import {
+  ILLUSTRATION_OPENAI_QUALITY,
+  ILLUSTRATION_OPENAI_SIZE,
+} from "../lib/ai/illustration-settings";
 import { PDFDocument, rgb, StandardFonts, type PDFPage } from "pdf-lib";
 import type { ChildProfileInput } from "../lib/types/child";
 import { formatSaLocation } from "../lib/sa-locations";
-import { FROM_EMAIL } from "../lib/site";
 
 const RECIPIENT = "urbanferrous20@gmail.com";
 const CHILD_ID = "sample-morne";
@@ -263,19 +267,18 @@ async function generateIllustration(openai: OpenAI, prompt: string): Promise<Buf
   const response = await openai.images.generate({
     model: "gpt-image-1-mini",
     prompt,
-    size: "1024x1024",
-    quality: "medium",
+    size: ILLUSTRATION_OPENAI_SIZE,
+    quality: ILLUSTRATION_OPENAI_QUALITY,
     n: 1,
   });
 
   const b64 = response.data?.[0]?.b64_json;
   if (!b64) throw new Error("Image generation returned no data");
-  return Buffer.from(b64, "base64");
+  return optimizeIllustration(Buffer.from(b64, "base64"));
 }
 
 async function main() {
   const openaiKey = process.env.OPENAI_API_KEY;
-  const resendKey = process.env.RESEND_API_KEY;
   const usePlaceholders = process.argv.includes("--placeholders") || !openaiKey;
 
   const imagePaths = new Map<number, string>();
@@ -290,7 +293,7 @@ async function main() {
       console.log(`  Page ${page.pageNumber}/10...`);
       const prompt = buildIllustrationPrompt(page);
       const buffer = await generateIllustration(openai, prompt);
-      const imagePath = await saveImage(CHILD_ID, `page-${page.pageNumber}.png`, buffer);
+      const imagePath = await saveImage(CHILD_ID, `page-${page.pageNumber}.jpg`, buffer);
       imagePaths.set(page.pageNumber, imagePath);
     }
   }
@@ -310,19 +313,14 @@ async function main() {
 
   console.log(`PDF saved: ${pdfPath}`);
 
-  if (!resendKey) {
-    console.log("\nRESEND_API_KEY not set — PDF created locally but not emailed.");
+  if (!isSmtpConfigured()) {
+    console.log("\nSMTP not configured — PDF created locally but not emailed.");
     console.log(`Open the file at: ${path.resolve(pdfPath)}`);
     process.exit(0);
   }
 
   console.log(`Sending to ${RECIPIENT}...`);
-  const resend = new Resend(resendKey);
-  const pdfBuffer = await fs.readFile(pdfPath);
-  const from = process.env.RESEND_FROM_EMAIL ?? FROM_EMAIL;
-
-  const result = await resend.emails.send({
-    from,
+  await sendPdfEmail({
     to: RECIPIENT,
     subject: `Tonight's story for Morne: ${story.title}`,
     html: `
@@ -333,19 +331,9 @@ async function main() {
         <p style="color: #64748b; font-size: 14px;">Sweet dreams from Dreamy Tales. 🌙</p>
       </div>
     `,
-    attachments: [
-      {
-        filename: "morne-cape-town-flying-story.pdf",
-        content: pdfBuffer,
-      },
-    ],
+    pdfPath,
+    filename: "morne-cape-town-flying-story.pdf",
   });
-
-  if (result.error) {
-    console.error("Email failed:", result.error);
-    console.log(`PDF is still available at: ${path.resolve(pdfPath)}`);
-    process.exit(1);
-  }
 
   console.log("Done! Check your inbox at", RECIPIENT);
 }

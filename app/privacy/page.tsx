@@ -68,8 +68,7 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>PayFast:</strong> payment processing</li>
             <li><strong>DeepSeek / OpenAI:</strong> story text and illustration generation (server-side only)</li>
-            <li><strong>Resend:</strong> email delivery</li>
-            <li><strong>Hosting provider:</strong> application and data storage</li>
+            <li><strong>1-grid (Plesk):</strong> hosting, MySQL, and email delivery</li>
           </ul>
           <p className="mt-2">API keys for AI services are stored securely and never exposed to your browser.</p>
         </div>
@@ -77,9 +76,11 @@ export default function PrivacyPage() {
         <div>
           <h2 className="font-display text-xl text-navy mb-2">6. Data Retention</h2>
           <p>
-            We retain your data for as long as your subscription is active, plus a reasonable period thereafter
-            for legal and accounting purposes. Generated stories are stored so you can re-download them from
-            your dashboard. You may request deletion of your account and associated data at any time.
+            We retain your account data for as long as your subscription is active, plus a reasonable period
+            thereafter for legal and accounting purposes. Story PDFs are emailed to you each night and kept on
+            our servers for up to <strong>90 days</strong> so you can re-download them from your dashboard;
+            after that, server copies are deleted automatically (your email copy remains yours). You may
+            request deletion of your account and associated data at any time.
           </p>
         </div>
 

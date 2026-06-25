@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { inngest } from "@/inngest/client";
+import { countPendingNightlyStories, processNextNightlyStory } from "@/lib/nightly-stories";
 
 export async function POST() {
   const session = await getSession();
@@ -12,7 +12,8 @@ export async function POST() {
     return NextResponse.json({ error: "Not available in production" }, { status: 403 });
   }
 
-  await inngest.send({ name: "dev/trigger-stories", data: {} });
+  const pending = await countPendingNightlyStories();
+  const result = await processNextNightlyStory();
 
-  return NextResponse.json({ message: "Use Inngest dashboard or cron for story generation" });
+  return NextResponse.json({ pending, result });
 }

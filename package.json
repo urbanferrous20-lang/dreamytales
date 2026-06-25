@@ -15,27 +15,29 @@
     "sample:characters": "tsx --env-file=.env.local --env-file=.env scripts/build-character-samples.ts",
     "sample:jake-fantasy": "tsx --env-file=.env.local --env-file=.env scripts/build-character-samples.ts --only jake-fantasy",
     "sample:layouts": "tsx scripts/build-layout-samples.ts",
-    "sample:languages": "tsx --env-file=.env.local --env-file=.env scripts/build-language-samples.ts"
+    "sample:languages": "tsx --env-file=.env.local --env-file=.env scripts/build-language-samples.ts",
+    "admin:hash-password": "tsx scripts/hash-admin-password.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
-    "inngest": "^4.8.0",
     "jose": "^6.2.3",
     "next": "^16.2.9",
+    "nodemailer": "^7.0.10",
     "openai": "^6.44.0",
     "pdf-lib": "^1.17.1",
     "prisma": "^6.19.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "resend": "^6.14.0",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^26.0.0",
+    "@types/nodemailer": "^7.0.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "dotenv": "^17.4.2",

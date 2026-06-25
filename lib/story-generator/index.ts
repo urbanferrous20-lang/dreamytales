@@ -99,7 +99,7 @@ export async function generatePageIllustrations(
     });
 
     const buffer = await generateIllustration(prompt);
-    const imagePath = await saveImage(childId, `page-${page.pageNumber}.png`, buffer);
+    const imagePath = await saveImage(childId, `page-${page.pageNumber}.jpg`, buffer);
     imagePaths.set(page.pageNumber, imagePath);
   }
 

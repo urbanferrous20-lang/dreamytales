@@ -1,17 +1,13 @@
 import "server-only";
-import { Resend } from "resend";
-import fs from "fs/promises";
-import { CONTACT_EMAIL, FROM_EMAIL } from "@/lib/site";
+import {
+  sendAdminAlert as sendAdminAlertSmtp,
+  sendPdfEmail,
+  sendSmtpMail,
+  sendTestEmail as sendTestEmailSmtp,
+} from "@/lib/smtp";
 
-function getResend(): Resend {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) throw new Error("RESEND_API_KEY is not configured");
-  return new Resend(key);
-}
-
-function getFromEmail(): string {
-  return process.env.RESEND_FROM_EMAIL ?? FROM_EMAIL;
-}
+export { sendTestEmailSmtp as sendTestEmail };
+export { sendAdminAlertSmtp as sendAdminAlert };
 
 export async function sendStoryEmail(params: {
   to: string;
@@ -22,11 +18,7 @@ export async function sendStoryEmail(params: {
   pdfPath: string;
   manageUrl: string;
 }): Promise<void> {
-  const resend = getResend();
-  const pdfBuffer = await fs.readFile(params.pdfPath);
-
-  await resend.emails.send({
-    from: getFromEmail(),
+  await sendPdfEmail({
     to: params.to,
     subject: `Tonight's story for ${params.childName}: ${params.storyTitle}`,
     html: `
@@ -40,12 +32,8 @@ export async function sendStoryEmail(params: {
         <p style="color: #64748b; font-size: 14px;">Sweet dreams from Dreamy Tales.</p>
       </div>
     `,
-    attachments: [
-      {
-        filename: `${params.storyTitle.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.pdf`,
-        content: pdfBuffer,
-      },
-    ],
+    pdfPath: params.pdfPath,
+    filename: `${params.storyTitle.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.pdf`,
   });
 }
 
@@ -54,15 +42,13 @@ export async function sendCancellationEmail(params: {
   parentName: string;
   accessEndsAt: Date;
 }): Promise<void> {
-  const resend = getResend();
   const endDate = params.accessEndsAt.toLocaleDateString("en-ZA", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 
-  await resend.emails.send({
-    from: getFromEmail(),
+  await sendSmtpMail({
     to: params.to,
     subject: "Your Dreamy Tales cancellation is confirmed",
     html: `
@@ -71,18 +57,5 @@ export async function sendCancellationEmail(params: {
       <p>You will not be charged after that date.</p>
       <p>We hope to see you again under the stars someday.</p>
     `,
-  });
-}
-
-export async function sendAdminAlert(subject: string, message: string): Promise<void> {
-  const adminEmail = process.env.ADMIN_EMAIL ?? CONTACT_EMAIL;
-  if (!adminEmail || !process.env.RESEND_API_KEY) return;
-
-  const resend = getResend();
-  await resend.emails.send({
-    from: getFromEmail(),
-    to: adminEmail,
-    subject: `[Dreamy Tales] ${subject}`,
-    html: `<pre>${message}</pre>`,
   });
 }

@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: ["/", "/llms.txt", "/llms-full.txt"],
-        disallow: ["/dashboard", "/api/", "/signup/success"],
+        disallow: ["/dashboard", "/admin", "/api/", "/signup/success"],
       },
       // Explicitly welcome major search and AI crawlers (same rules as *)
       { userAgent: "Googlebot", allow: "/" },

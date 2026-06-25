@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/db";
+import { ANALYTICS_EVENTS, logAnalyticsEvent } from "@/lib/analytics";
 import { generateCharacterBible } from "@/lib/story-generator";
 import { signupSchema, type ChildProfileInput } from "@/lib/types/child";
 import { recurringCharge, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
@@ -113,6 +114,12 @@ async function activateSignup(signupId: string, payfastToken?: string) {
   }
 
   await prisma.pendingSignup.delete({ where: { id: signupId } });
+
+  await logAnalyticsEvent({
+    eventType: ANALYTICS_EVENTS.SUBSCRIPTION_ACTIVATED,
+    sessionId: signupId,
+    metadata: { signupId, email: pending.email, childCount: children.length },
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -137,7 +144,7 @@ export async function POST(request: NextRequest) {
 
     if (amount === 0 && signupId) {
       await activateSignup(signupId, token);
-    } else if (signupId) {
+    } else if (token) {
       const user = await prisma.user.findFirst({
         where: { subscription: { payfastToken: token } },
         include: { subscription: true },
@@ -156,6 +163,29 @@ export async function POST(request: NextRequest) {
               : addDays(new Date(), fallbackDays),
           },
         });
+      }
+
+      if (amount > 0) {
+        const payfastPaymentId = data.pf_payment_id ?? data.m_payment_id ?? null;
+        if (payfastPaymentId) {
+          await prisma.payment.upsert({
+            where: { payfastPaymentId },
+            create: {
+              userId: user?.id ?? null,
+              subscriptionId: user?.subscription?.id ?? null,
+              payfastPaymentId,
+              amountGross: amount,
+              amountFee: parseFloat(data.amount_fee ?? "0"),
+              paymentStatus: "COMPLETE",
+              billingDate: data.billing_date ? new Date(data.billing_date) : null,
+            },
+            update: {
+              amountGross: amount,
+              amountFee: parseFloat(data.amount_fee ?? "0"),
+              paymentStatus: "COMPLETE",
+            },
+          });
+        }
       }
     }
   }

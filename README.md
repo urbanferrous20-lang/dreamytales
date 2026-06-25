@@ -12,7 +12,7 @@ Nightly personalised illustrated PDF bedtime short stories for South African fam
 - Parent dashboard with story archive
 - 1-month notice cancellation with automatic PayFast billing stop
 
-## Quick start
+## Quick start (local)
 
 ### 1. Install dependencies
 
@@ -35,11 +35,14 @@ cp .env.example .env.local
 | `DEEPSEEK_API_KEY` | Story text generation |
 | `OPENAI_API_KEY` | Illustrations only |
 | `PAYFAST_*` | Payment gateway (use sandbox first) |
-| `RESEND_API_KEY` | Email with PDF attachments |
+| `SMTP_*` | 1-grid outgoing mail (story PDFs) |
 | `AUTH_SECRET` | Session encryption (random 32+ char string) |
-| `DATABASE_URL` | `file:./dev.db` for local SQLite |
+| `CRON_SECRET` | Protects scheduled task URLs |
+| `DATABASE_URL` | MySQL connection string |
 
 ### 3. Set up database
+
+Requires MySQL (local install, Docker, or your 1-grid database):
 
 ```bash
 npm run db:push
@@ -60,21 +63,29 @@ Open [http://localhost:3000](http://localhost:3000)
 3. For ITN webhooks locally, use [ngrok](https://ngrok.com) to expose `/api/webhooks/payfast/itn`
 4. Set `NEXT_PUBLIC_APP_URL` to your ngrok URL during testing
 
-### 6. Nightly stories (Inngest)
+### 6. Nightly stories (Plesk cron in production)
 
-Stories run on cron at **16:00 UTC (18:00 SAST)** via Inngest.
+Stories run at **6pm SAST** via Plesk scheduled tasks calling `/api/cron/nightly-stories` (one child per run).
 
-For local dev, run the Inngest dev server:
+For local dev, POST to `/api/dev/trigger-stories` while logged in.
 
-```bash
-npx inngest-cli@latest dev
-```
+## Production: 1-grid Plesk
 
-## Publishing to dreamytales.co.za
+**Recommended hosting:** your existing **1-grid Plesk Linux Medium** package.
 
-Production domain: **https://dreamytales.co.za** (`www` redirects to the apex domain).
+Full step-by-step guide: **[docs/DEPLOY-PLESK.md](docs/DEPLOY-PLESK.md)**
 
-The app is configured for this domain in `lib/site.ts`. Set:
+Summary:
+
+1. Create **MySQL** database and `Admin@dreamytales.co.za` mailbox in Plesk  
+2. Enable **Node.js** (20+), set startup file to `start.js`  
+3. Add env vars from `.env.example` in Plesk Node.js settings  
+4. Run `npm install`, `npm run build`, `npx prisma db push`  
+5. Enable **SSL** for `dreamytales.co.za`  
+6. Add **Scheduled Tasks** for nightly stories and cancellations  
+7. Test SMTP: `/api/cron/test-email?secret=...`
+
+Production domain: **https://dreamytales.co.za**
 
 ```env
 NEXT_PUBLIC_APP_URL=https://dreamytales.co.za
@@ -82,45 +93,34 @@ NEXT_PUBLIC_APP_URL=https://dreamytales.co.za
 
 PayFast return and ITN URLs are built automatically from that value.
 
-### Deploy to Vercel
-
-1. Push the project to GitHub and import it at [vercel.com](https://vercel.com)
-2. Add custom domains **dreamytales.co.za** and **www.dreamytales.co.za** in Vercel → Project → Settings → Domains
-3. At your domain registrar, add the DNS records Vercel shows (usually `A`/`CNAME` for apex and `CNAME` for `www`)
-4. In Vercel → Settings → Environment Variables, add all values from `.env.local` (use **Postgres** for `DATABASE_URL`, not SQLite)
-5. Set `PAYFAST_SANDBOX=false` and live PayFast credentials when going live
-6. Deploy — Vercel runs `npm run build` (includes `prisma generate`)
-
-Optional: set Vercel function region to **Cape Town (`cpt1`)** in Project Settings for lower latency in SA (Pro plan).
-
-### Local development
-
-Use a separate override in `.env.local`:
-
-```env
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
 ### Before launch checklist
 
-1. **Deploy** — Vercel (recommended for Next.js) or similar host
-2. **DNS** — Point `dreamytales.co.za` to your host (Vercel gives A/CNAME records at your registrar)
-3. **Environment** — Set production env vars on the host (not in `.env.local`):
-   - `NEXT_PUBLIC_APP_URL=https://dreamytales.co.za`
-   - `PAYFAST_SANDBOX=false` + live PayFast merchant credentials
-   - `RESEND_FROM_EMAIL=Dreamy Tales <Admin@dreamytales.co.za>` (verify domain in Resend)
-   - `DATABASE_URL` — use Postgres (Supabase/Neon), not SQLite
-   - All API keys (`DEEPSEEK`, `OPENAI`, `RESEND`, `INNGEST`, `AUTH_SECRET`)
-4. **PayFast** — ITN notify URL becomes `https://dreamytales.co.za/api/webhooks/payfast/itn` (built from `NEXT_PUBLIC_APP_URL`)
-5. **Email** — Set up `Admin@dreamytales.co.za` at your registrar or Google Workspace for contact and story delivery; verify the domain in Resend
-6. **Inngest** — Connect production app URL for nightly story cron
-7. **Legal** — Have Terms & Privacy reviewed by a SA attorney before taking payments
+1. **Deploy** on 1-grid Plesk (see `docs/DEPLOY-PLESK.md`)
+2. **DNS** — Point `dreamytales.co.za` to Plesk (replace parking page)
+3. **Environment** — All production env vars in Plesk Node.js panel
+4. **PayFast** — ITN at `https://dreamytales.co.za/api/webhooks/payfast/itn`
+5. **Cron** — Nightly stories + cancellation processing scheduled
+6. **Legal** — Have Terms & Privacy reviewed by a SA attorney before taking payments
 
-Keep a local-only override in `.env.local` when developing:
+## Admin dashboard
 
-```env
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
+Owner metrics at **`/admin`** (not indexed by search engines).
+
+1. Set admin credentials in `.env.local` / Plesk:
+   ```bash
+   npm run admin:hash-password -- "your-secure-password"
+   ```
+   Use `ADMIN_PASSWORD=...` for local dev, or `ADMIN_PASSWORD_HASH_B64=...` on Plesk (Next.js cannot read bcrypt `$` hashes in `.env` files).
+2. Add to `.env.local` / Plesk:
+   ```env
+   ADMIN_EMAIL=Admin@dreamytales.co.za
+   ADMIN_PASSWORD=your-secure-password
+   ```
+3. Sign in at [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+
+Tracks visitors, signup funnel, subscriptions, revenue (from PayFast payments), unsubscribes, reviews, and **storage usage** (with 90-day PDF retention).
+
+Schedule daily PDF cleanup on Plesk: `GET /api/cron/cleanup-pdfs?secret=...` (see `docs/DEPLOY-PLESK.md`).
 
 ## Estimated AI cost per customer
 
@@ -135,10 +135,11 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 app/           # Pages and API routes
 components/    # UI components
-lib/           # Business logic, AI clients, PayFast, email
-inngest/       # Scheduled jobs (nightly stories, cancellation)
-prisma/        # Database schema
+lib/           # Business logic, AI clients, PayFast, email, cron jobs
+prisma/        # Database schema (MySQL)
 storage/       # Generated PDFs and images (gitignored)
+docs/          # Deployment guides
+start.js       # Plesk Node.js startup file
 ```
 
 ## Security
@@ -147,6 +148,7 @@ storage/       # Generated PDFs and images (gitignored)
 - Passwords hashed with bcrypt
 - Sessions via signed JWT cookies
 - PayFast ITN signature verification
+- Cron endpoints protected by `CRON_SECRET`
 
 ## Legal
 

@@ -1,5 +1,5 @@
 /**
- * Build Morne sample PDF from pre-generated assets and email if Resend is configured.
+ * Build Morne sample PDF from pre-generated assets and email if SMTP is configured.
  * Run: npm run sample:morne
  */
 import { config } from "dotenv";
@@ -8,9 +8,8 @@ config({ path: ".env" });
 
 import fs from "fs/promises";
 import path from "path";
-import { Resend } from "resend";
 import { assembleStoryPdf } from "../lib/pdf-builder/layout";
-import { FROM_EMAIL } from "../lib/site";
+import { isSmtpConfigured, sendPdfEmail } from "../lib/smtp";
 
 const RECIPIENT = "urbanferrous20@gmail.com";
 const ASSETS_DIR = path.join(process.cwd(), "assets");
@@ -92,19 +91,14 @@ async function main() {
   const pdfPath = await buildPdf();
   console.log("PDF saved:", path.resolve(pdfPath));
 
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) {
-    console.log("\nRESEND_API_KEY not in .env.local — cannot email yet.");
-    console.log("Add RESEND_API_KEY and re-run to send to", RECIPIENT);
+  if (!isSmtpConfigured()) {
+    console.log("\nSMTP not configured — cannot email yet.");
+    console.log("Set SMTP_HOST, SMTP_USER, SMTP_PASS in .env.local and re-run to send to", RECIPIENT);
     return;
   }
 
   console.log("Sending to", RECIPIENT, "...");
-  const resend = new Resend(resendKey);
-  const pdfBuffer = await fs.readFile(pdfPath);
-
-  const result = await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL ?? FROM_EMAIL,
+  await sendPdfEmail({
     to: RECIPIENT,
     subject: `Tonight's story for Morne: ${story.title}`,
     html: `
@@ -114,13 +108,9 @@ async function main() {
         <p>This is a <strong>sample Dreamy Tales story</strong> — set in Cape Town, with your love of flying woven in. The illustrated PDF is attached.</p>
       </div>
     `,
-    attachments: [{ filename: "morne-cape-town-flying-story.pdf", content: pdfBuffer }],
+    pdfPath,
+    filename: "morne-cape-town-flying-story.pdf",
   });
-
-  if (result.error) {
-    console.error("Email failed:", result.error);
-    process.exit(1);
-  }
 
   console.log("Email sent! Check", RECIPIENT);
 }

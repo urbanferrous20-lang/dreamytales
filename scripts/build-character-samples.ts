@@ -12,6 +12,11 @@ config({ path: ".env" });
 import fs from "fs/promises";
 import path from "path";
 import OpenAI from "openai";
+import { optimizeIllustration } from "../lib/image-optimize";
+import {
+  ILLUSTRATION_OPENAI_QUALITY,
+  ILLUSTRATION_OPENAI_SIZE,
+} from "../lib/ai/illustration-settings";
 import { assembleStoryPdf } from "../lib/pdf-builder/layout";
 import { getIllustrationContentPolicy } from "../lib/story-content-policy";
 import type { ChildProfileInput } from "../lib/types/child";
@@ -431,13 +436,13 @@ async function generateIllustration(openai: OpenAI, prompt: string): Promise<Buf
   const response = await openai.images.generate({
     model: "gpt-image-1-mini",
     prompt,
-    size: "1024x1024",
-    quality: "medium",
+    size: ILLUSTRATION_OPENAI_SIZE,
+    quality: ILLUSTRATION_OPENAI_QUALITY,
     n: 1,
   });
   const b64 = response.data?.[0]?.b64_json;
   if (!b64) throw new Error("Image generation returned no data");
-  return Buffer.from(b64, "base64");
+  return optimizeIllustration(Buffer.from(b64, "base64"));
 }
 
 async function ensureImages(
@@ -449,14 +454,22 @@ async function ensureImages(
   await fs.mkdir(assetDir, { recursive: true });
 
   for (const page of sample.pages) {
-    const assetPath = path.join(assetDir, `page-${page.pageNumber}.png`);
+    const assetPath = path.join(assetDir, `page-${page.pageNumber}.jpg`);
 
     try {
       const cached = await fs.readFile(assetPath);
       images.set(page.pageNumber, cached);
       continue;
     } catch {
-      // generate below
+      // try legacy PNG cache
+      try {
+        const legacyPath = path.join(assetDir, `page-${page.pageNumber}.png`);
+        const cached = await fs.readFile(legacyPath);
+        images.set(page.pageNumber, cached);
+        continue;
+      } catch {
+        // generate below
+      }
     }
 
     if (!openai) continue;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { isPdfStored } from "@/lib/storage-config";
 import fs from "fs/promises";
 
 export async function GET(
@@ -21,6 +22,16 @@ export async function GET(
 
   if (!story || story.child.userId !== session.userId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (!isPdfStored(story.pdfPath)) {
+    return NextResponse.json(
+      {
+        error:
+          "This PDF is no longer available for download. Check your email inbox — stories are kept there for your records.",
+      },
+      { status: 410 }
+    );
   }
 
   try {

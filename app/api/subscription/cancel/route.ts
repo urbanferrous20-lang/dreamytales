@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { ANALYTICS_EVENTS, logAnalyticsEvent } from "@/lib/analytics";
 import { prisma } from "@/lib/db";
 import { sendCancellationEmail } from "@/lib/email";
-import { cancelPayfastSubscription } from "@/lib/payfast";
-import { inngest } from "@/inngest/client";
 
 export async function POST() {
   const session = await getSession();
@@ -32,16 +31,11 @@ export async function POST() {
     },
   });
 
-  if (subscription.payfastToken) {
-    await inngest.send({
-      name: "subscription/cancel.scheduled",
-      data: {
-        subscriptionId: subscription.id,
-        payfastToken: subscription.payfastToken,
-        accessEndsAt: accessEndsAt.toISOString(),
-      },
-    });
-  }
+  await logAnalyticsEvent({
+    eventType: ANALYTICS_EVENTS.SUBSCRIPTION_CANCELLED,
+    sessionId: subscription.id,
+    metadata: { subscriptionId: subscription.id, userId: subscription.userId },
+  });
 
   try {
     await sendCancellationEmail({
