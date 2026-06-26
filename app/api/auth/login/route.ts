@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPassword, createSession, setSessionCookie } from "@/lib/auth";
+import { activatePendingSignupByEmail } from "@/lib/signup-activate";
 import { prisma } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
@@ -7,10 +8,27 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Email and password required" }, { status: 400 });
+      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+
+    if (!user) {
+      const pending = await prisma.pendingSignup.findFirst({
+        where: {
+          email: normalizedEmail,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (pending && (await verifyPassword(password, pending.passwordHash))) {
+        user = await activatePendingSignupByEmail(normalizedEmail);
+      }
+    }
+
     if (!user) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }

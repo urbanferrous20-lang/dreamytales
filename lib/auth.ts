@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
+import { getSiteUrl } from "@/lib/site";
 
 const SESSION_COOKIE = "dreamy_tales_session";
 const SESSION_DURATION = 60 * 60 * 24 * 30;
@@ -53,7 +54,7 @@ export async function setSessionCookie(token: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: getSiteUrl().startsWith("https://"),
     sameSite: "lax",
     maxAge: SESSION_DURATION,
     path: "/",

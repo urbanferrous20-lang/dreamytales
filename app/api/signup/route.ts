@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { recurringCharge, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
 import {
   addDays,
+  buildPayfastRedirectHtml,
   buildSubscriptionFormData,
   formatBillingDate,
   getPayfastProcessUrl,
@@ -24,8 +25,9 @@ export async function POST(request: NextRequest) {
     }
 
     const { name, email, password, children, billingInterval } = parsed.data;
+    const normalizedEmail = email.trim().toLowerCase();
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
       return NextResponse.json({ error: "An account with this email already exists" }, { status: 400 });
     }
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
     await prisma.pendingSignup.create({
       data: {
         id: signupId,
-        email,
+        email: normalizedEmail,
         name,
         passwordHash,
         childrenJson: JSON.stringify(children),
@@ -64,20 +66,25 @@ export async function POST(request: NextRequest) {
       billingInterval,
       itemName: "Dreamy Tales Subscription",
       itemDescription: `${children.length} child(ren) - ${billingInterval === "annual" ? "annual" : "monthly"} bedtime short stories`,
-      emailAddress: email,
+      emailAddress: normalizedEmail,
       nameFirst: firstName,
       nameLast: lastName,
       billingDate,
     });
 
-    return NextResponse.json({
-      checkoutForm: {
-        ...formData,
-        _action: getPayfastProcessUrl(),
-      },
-    });
+    const actionUrl = getPayfastProcessUrl();
+    return new NextResponse(
+      buildPayfastRedirectHtml(formData, actionUrl, { signupId, email: normalizedEmail }),
+      {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      }
+    );
   } catch (error) {
+    const message =
+      error instanceof Error && error.message.includes("PayFast")
+        ? error.message
+        : "Signup failed. Please try again.";
     console.error("Signup error:", error instanceof Error ? error.message : "unknown");
-    return NextResponse.json({ error: "Signup failed. Please try again." }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
