@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { MarketingSpendCacPanel } from "@/components/admin/MarketingSpendCacPanel";
 import { SubscriberGoalBanner } from "@/components/admin/SubscriberGoalBanner";
 import { getAdminSession } from "@/lib/admin-auth";
 import { getAdminDashboardStats, formatRevenue } from "@/lib/admin-stats";
@@ -150,6 +151,11 @@ export default async function AdminDashboardPage() {
       <SubscriberGoalBanner
         progress={subscriberGoal}
         trialSubscribers={stats.trialSubscribers}
+      />
+
+      <MarketingSpendCacPanel
+        activeSubscribers={stats.activeSubscribers}
+        subscriptionsTotal={stats.subscriptions.total}
       />
 
       {!smtpConfigured || !smtpCanConnect ? (
