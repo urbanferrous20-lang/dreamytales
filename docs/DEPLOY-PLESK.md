@@ -52,18 +52,37 @@ ADMIN_EMAIL=Admin@dreamytales.co.za
 
 ## Step 3 — Upload the app
 
-**Option A — Git (recommended)**  
-Plesk → domain → **Git** → add repo URL → deploy to `httpdocs` (or a subfolder).
+**Recommended: use the deploy ZIP script (avoids corrupted files)**
 
-**Option B — FTP / File Manager**  
-Upload all project files except `node_modules`, `.next`, `dev.db`, `.env.local`.
+On your PC, in the project folder:
 
-Ensure these folders are **writable** by the Node process (for PDFs):
+```bash
+npm run package:plesk
+```
 
-- `storage/stories`
-- `storage/images`
+This creates **`dreamytales-deploy.zip`** in the project root with the correct folder structure.
 
-Create them if missing: `mkdir -p storage/stories storage/images`
+Upload steps in Plesk:
+
+1. **File Manager** → `httpdocs` → **delete everything** inside (old broken upload)
+2. Upload **`dreamytales-deploy.zip`**
+3. **Extract** the zip **into `httpdocs` directly** — you should see `package.json`, `prisma/`, `app/` at the top level, NOT inside a `dreamytales-main` subfolder
+4. In **Run Node.js commands**, verify before install:
+
+```bash
+node scripts/verify-deploy-files.js
+```
+
+You must see `All checks passed`. If `prisma/schema.prisma` mentions `JsonLd`, the upload is still wrong — delete and re-extract.
+
+5. Then run `npm install`
+
+**Option A — GitHub ZIP (manual)**  
+Download https://github.com/urbanferrous20-lang/dreamytales/archive/refs/heads/main.zip — extract on PC, upload contents of the inner folder to `httpdocs`.
+
+**Option B — Git in Plesk** (needs GitHub token or deploy key — see README)
+
+**Do NOT** upload files one-by-one from random folders on your PC — this causes `prisma/schema.prisma` to contain wrong file content.
 
 ---
 
@@ -82,7 +101,9 @@ Create them if missing: `mkdir -p storage/stories storage/images`
 
 ### Environment variables in Plesk
 
-In the Node.js panel, add custom environment variables (same as `.env.example`):
+**Important:** On many 1-grid/Plesk setups, variables in the Node.js panel are **only** passed to the running app (`start.js`), **not** to **Run script** / **Run Node.js commands**. If `db:push` or `build` says `DATABASE_URL not found`, use a **`.env` file** in `httpdocs` (see below).
+
+Add variables in the Node.js panel **and** create **`httpdocs/.env`** (File Manager → enable “show hidden files” → create file named `.env`):
 
 ```env
 NEXT_PUBLIC_APP_URL=https://dreamytales.co.za
@@ -94,7 +115,7 @@ PAYFAST_PASSPHRASE=...
 PAYFAST_SANDBOX=true
 AUTH_SECRET=...
 CRON_SECRET=...
-DATABASE_URL=mysql://...
+DATABASE_URL=mysql://USER:PASSWORD@localhost:3306/DATABASE_NAME
 SMTP_HOST=mail.dreamytales.co.za
 SMTP_PORT=465
 SMTP_SECURE=true
@@ -102,6 +123,19 @@ SMTP_USER=Admin@dreamytales.co.za
 SMTP_PASS=...
 SMTP_FROM=Dreamy Tales <Admin@dreamytales.co.za>
 ADMIN_EMAIL=Admin@dreamytales.co.za
+ADMIN_PASSWORD_HASH_B64=...
+PDF_RETENTION_DAYS=90
+STORAGE_QUOTA_GB=25
+```
+
+Use your real MySQL user, password, and database name from Plesk → **Databases**. **Do not commit `.env`** — it stays on the server only.
+
+Then run **`db:push`** again (Run script). Prisma reads `.env` from the project root automatically.
+
+**Verify `.env` is visible to Node** (Run Node.js commands):
+
+```bash
+node -e "const fs=require('fs'); console.log(fs.existsSync('.env')?' .env exists':'MISSING .env file'); console.log(process.env.DATABASE_URL?'DATABASE_URL in env':'no DATABASE_URL in process.env (OK if .env exists for prisma)')"
 ```
 
 Generate secrets:
@@ -204,14 +238,45 @@ Check response JSON and parent email with PDF attachment.
 
 | Issue | What to check |
 |-------|----------------|
+| `schema.prisma` / `JsonLd` Prisma error | Run `node scripts/verify-deploy-files.js` — re-upload ZIP; delete all of `httpdocs` first |
 | 502 / app not running | Node.js enabled, `start.js` set, Restart Node.js |
 | Build fails | Node 20+, enough disk/RAM; run `npm run build` in Plesk commands |
 | SMTP auth failed | Full email as username, port 465 + `SMTP_SECURE=true` |
 | PayFast ITN fails | HTTPS live, `NEXT_PUBLIC_APP_URL` correct |
 | Cron does nothing | `CRON_SECRET` matches URL; check Scheduled Tasks log |
 | Story timeout | Normal on first child — cron processes **one child per run** |
+| `nodenv: node: command not found` (npm error 127) | Enable Node.js in Plesk, pick version **22**, use **NPM install** button — not SSH. Delete `node_modules` first if partial install. See below. |
 
 Contact 1-grid support if Node.js extension is missing or Node version is below 20.
+
+### `nodenv: node: command not found` (npm error 127)
+
+This means npm ran in a shell where **Node.js is not activated**. Common on 1-grid Plesk when you run `npm install` from SSH or a generic terminal instead of the **Node.js** panel.
+
+**Fix (in order):**
+
+1. Plesk → **dreamytales.co.za** → **Node.js**
+2. **Enable Node.js** (if not already)
+3. Set **Node.js version** to **22.x** (or 20.x)
+4. Set **Application root** to `/httpdocs`
+5. Click **Apply** / save
+6. In **File Manager**, delete the **`node_modules`** folder inside `httpdocs` (leftover from the failed install)
+7. Back in **Node.js**, click the **NPM install** button (do **not** use SSH or a separate terminal)
+8. When that finishes, use **Run script** → `build`
+
+**Do not** run `npm install` from:
+- Plesk **SSH Terminal** (unless you know how to activate nodenv)
+- A generic shell without Node in PATH
+
+**Optional:** the repo includes a `.node-version` file (set to `22`) so nodenv picks the right version when Plesk runs commands from the app root.
+
+To confirm Node works, in **Node.js → Run Node.js commands** (not SSH):
+
+```bash
+node -v
+```
+
+You should see `v22.x.x`. If that fails, Node.js is not enabled correctly — contact 1-grid support.
 
 ---
 

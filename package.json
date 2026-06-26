@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "preinstall": "node scripts/verify-deploy-files.js",
     "postinstall": "prisma generate",
     "dev": "next dev --turbopack",
     "build": "prisma generate && next build",
@@ -16,7 +17,9 @@
     "sample:jake-fantasy": "tsx --env-file=.env.local --env-file=.env scripts/build-character-samples.ts --only jake-fantasy",
     "sample:layouts": "tsx scripts/build-layout-samples.ts",
     "sample:languages": "tsx --env-file=.env.local --env-file=.env scripts/build-language-samples.ts",
-    "admin:hash-password": "tsx scripts/hash-admin-password.ts"
+    "admin:hash-password": "tsx scripts/hash-admin-password.ts",
+    "verify:deploy": "node scripts/verify-deploy-files.js",
+    "package:plesk": "powershell -ExecutionPolicy Bypass -File scripts/package-for-plesk.ps1"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

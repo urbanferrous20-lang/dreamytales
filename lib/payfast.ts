@@ -45,17 +45,16 @@ export function generatePayfastSignature(
   const ordered = Object.keys(data)
     .filter((k) => data[k] !== "" && k !== "signature")
     .sort();
-  const paramString = ordered.map((k) => `${k}=${encodeURIComponent(data[k]).replace(/%20/g, "+")}`).join("&");
-  return crypto.createHash("md5").update(`${paramString}&passphrase=${pass}`).digest("hex");
+  const paramString = ordered
+    .map((k) => `${k}=${encodeURIComponent(data[k].trim()).replace(/%20/g, "+")}`)
+    .join("&");
+  const passEncoded = encodeURIComponent(pass).replace(/%20/g, "+");
+  return crypto.createHash("md5").update(`${paramString}&passphrase=${passEncoded}`).digest("hex");
 }
 
+/** PayFast onsite forms require alphabetically sorted fields (same as generatePayfastSignature). */
 export function generateFormSignature(data: Record<string, string>): string {
-  const { passphrase } = getMerchantConfig();
-  const pairs = Object.entries(data)
-    .filter(([k, v]) => v !== "" && k !== "signature")
-    .map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%20/g, "+")}`);
-  const paramString = pairs.join("&");
-  return crypto.createHash("md5").update(`${paramString}&passphrase=${passphrase}`).digest("hex");
+  return generatePayfastSignature(data);
 }
 
 import type { BillingInterval } from "@/lib/pricing";

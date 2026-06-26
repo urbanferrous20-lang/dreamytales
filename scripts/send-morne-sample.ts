@@ -291,7 +291,10 @@ async function main() {
 
     for (const page of story.pages) {
       console.log(`  Page ${page.pageNumber}/10...`);
-      const prompt = buildIllustrationPrompt(page);
+      const prompt = buildIllustrationPrompt({
+        description: page.sceneDescription,
+        mood: page.mood,
+      });
       const buffer = await generateIllustration(openai, prompt);
       const imagePath = await saveImage(CHILD_ID, `page-${page.pageNumber}.jpg`, buffer);
       imagePaths.set(page.pageNumber, imagePath);
