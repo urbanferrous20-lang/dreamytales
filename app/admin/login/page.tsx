@@ -39,8 +39,17 @@ export default function AdminLoginPage() {
         <div className="text-center mb-8">
           <span className="text-3xl">🌙</span>
           <h1 className="font-display text-2xl text-navy mt-2">Dreamy Tales Admin</h1>
-          <p className="text-navy/60 text-sm mt-1">Site owner dashboard</p>
+          <p className="text-navy/60 text-sm mt-1">Site owner dashboard — not the parent login</p>
         </div>
+
+        <p className="text-xs text-navy/50 mb-4 text-center">
+          Use your <strong>ADMIN_EMAIL</strong> and <strong>ADMIN_PASSWORD</strong> from the server{" "}
+          <code className="text-[11px]">.env</code> file. Parents sign in at{" "}
+          <a href="/login" className="text-gold underline">
+            /login
+          </a>
+          .
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { verifyPassword } from "@/lib/auth";
+import { getSiteUrl } from "@/lib/site";
 
 const ADMIN_SESSION_COOKIE = "dreamy_tales_admin_session";
 const ADMIN_SESSION_DURATION = 60 * 60 * 24 * 7;
@@ -17,9 +18,14 @@ function getSecret(): Uint8Array {
 }
 
 function getAdminEmail(): string {
-  const email = process.env.ADMIN_EMAIL;
+  const email = process.env.ADMIN_EMAIL?.trim();
   if (!email) throw new Error("ADMIN_EMAIL is not configured");
   return email.toLowerCase();
+}
+
+function getAdminPlainPassword(): string | null {
+  const password = process.env.ADMIN_PASSWORD?.trim();
+  return password || null;
 }
 
 function getAdminPasswordHash(): string | null {
@@ -44,11 +50,34 @@ function getAdminPasswordHash(): string | null {
   return hash;
 }
 
+export function isAdminPasswordConfigured(): boolean {
+  return Boolean(getAdminPlainPassword() || getAdminPasswordHash());
+}
+
+/** Explains common Plesk misconfiguration (plain password in HASH_B64 field). */
+export function getAdminPasswordConfigError(): string | null {
+  if (isAdminPasswordConfigured()) return null;
+
+  if (process.env.ADMIN_PASSWORD_HASH_B64?.trim()) {
+    return (
+      "ADMIN_PASSWORD_HASH_B64 is set but is not a valid bcrypt hash. " +
+      "Do not put your plain password there. Use ADMIN_PASSWORD=your-password instead, " +
+      "or run: npm run admin:hash-password -- \"your-password\" and paste the ADMIN_PASSWORD_HASH_B64 line it prints."
+    );
+  }
+
+  if (process.env.ADMIN_PASSWORD_HASH?.trim()) {
+    return "ADMIN_PASSWORD_HASH is set but is not a valid bcrypt hash (must start with $2).";
+  }
+
+  return "Set ADMIN_PASSWORD=your-password in httpdocs/.env, or generate ADMIN_PASSWORD_HASH_B64 with npm run admin:hash-password.";
+}
+
 export async function verifyAdminCredentials(email: string, password: string): Promise<boolean> {
   const adminEmail = getAdminEmail();
-  if (email.toLowerCase() !== adminEmail) return false;
+  if (email.trim().toLowerCase() !== adminEmail) return false;
 
-  const plainPassword = process.env.ADMIN_PASSWORD;
+  const plainPassword = getAdminPlainPassword();
   if (plainPassword && password === plainPassword) return true;
 
   const hash = getAdminPasswordHash();
@@ -88,7 +117,7 @@ export async function setAdminSessionCookie(token: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(ADMIN_SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: getSiteUrl().startsWith("https://"),
     sameSite: "lax",
     maxAge: ADMIN_SESSION_DURATION,
     path: "/",

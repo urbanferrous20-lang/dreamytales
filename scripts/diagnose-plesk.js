@@ -54,6 +54,29 @@ for (const key of ["DATABASE_URL", "AUTH_SECRET", "NEXT_PUBLIC_APP_URL"]) {
   else fail(`${key} is not set`);
 }
 
+if (process.env.ADMIN_EMAIL?.trim()) ok("ADMIN_EMAIL is set");
+else fail("ADMIN_EMAIL is not set");
+
+if (process.env.ADMIN_PASSWORD?.trim()) {
+  ok("ADMIN_PASSWORD is set (plain password — OK for Plesk)");
+} else if (process.env.ADMIN_PASSWORD_HASH_B64?.trim()) {
+  try {
+    const decoded = Buffer.from(process.env.ADMIN_PASSWORD_HASH_B64.trim(), "base64")
+      .toString("utf8")
+      .trim();
+    if (decoded.startsWith("$2")) ok("ADMIN_PASSWORD_HASH_B64 decodes to a valid bcrypt hash");
+    else {
+      fail(
+        "ADMIN_PASSWORD_HASH_B64 is not a bcrypt hash — you may have pasted the plain password. Use ADMIN_PASSWORD=... instead"
+      );
+    }
+  } catch {
+    fail("ADMIN_PASSWORD_HASH_B64 is not valid base64");
+  }
+} else {
+  fail("Admin password not set — add ADMIN_PASSWORD=your-password to .env");
+}
+
 try {
   require("next/dist/cli/next-start");
   ok("next/dist/cli/next-start loads");

@@ -37,6 +37,25 @@ export async function sendStoryEmail(params: {
   });
 }
 
+export async function sendPasswordResetEmail(params: {
+  to: string;
+  parentName: string;
+  resetUrl: string;
+}): Promise<void> {
+  await sendSmtpMail({
+    to: params.to,
+    subject: "Reset your Dreamy Tales password",
+    html: `
+      <div style="font-family: Georgia, serif; max-width: 560px; margin: 0 auto; color: #1e293b;">
+        <p>Hi ${params.parentName},</p>
+        <p>We received a request to reset your Dreamy Tales password. Click the link below to choose a new one:</p>
+        <p><a href="${params.resetUrl}">Reset my password</a></p>
+        <p style="color: #64748b; font-size: 14px;">This link expires in 1 hour. If you did not request this, you can ignore this email.</p>
+      </div>
+    `,
+  });
+}
+
 export async function sendCancellationEmail(params: {
   to: string;
   parentName: string;

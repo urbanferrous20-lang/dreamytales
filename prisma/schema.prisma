@@ -19,6 +19,7 @@ model User {
   storyReviews StoryReview[]
   siteReview   SiteReview?
   payments     Payment[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model StoryReview {
@@ -117,6 +118,19 @@ model PendingSignup {
   agreedToTerms Boolean @default(false)
   createdAt DateTime @default(now())
   expiresAt DateTime
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model AnalyticsEvent {
