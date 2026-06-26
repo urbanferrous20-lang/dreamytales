@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { createSession, isSecureRequest, setSessionCookie } from "@/lib/auth";
+import { createSession, setSessionCookie } from "@/lib/auth";
 import { findEmailForSignupId, resolveUserAfterPayment } from "@/lib/signup-complete";
 import { SignupSuccessClient } from "./SignupSuccessClient";
 

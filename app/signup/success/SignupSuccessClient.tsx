@@ -30,8 +30,7 @@ export function SignupSuccessClient({ initialEmail = "" }: { initialEmail?: stri
       const resolvedEmail =
         searchParams.get("email") ??
         sessionStorage.getItem("dreamytales_signup_email") ??
-        initialEmail ||
-        undefined;
+        (initialEmail || undefined);
       const storedPassword = sessionStorage.getItem("dreamytales_signup_password") ?? undefined;
 
       if (resolvedEmail && !email) {
