@@ -91,10 +91,19 @@ export function SignupWizard() {
       });
 
       const contentType = res.headers.get("content-type") ?? "";
-      if (contentType.includes("text/html")) {
-        if (!res.ok) {
-          throw new Error("Signup failed");
+
+      if (!res.ok) {
+        let message = "Signup failed. Please try again.";
+        try {
+          const data = (await res.json()) as { error?: string };
+          if (data.error) message = data.error;
+        } catch {
+          // ignore non-JSON error bodies
         }
+        throw new Error(message);
+      }
+
+      if (contentType.includes("text/html")) {
         const html = await res.text();
         document.open();
         document.write(html);
@@ -103,8 +112,6 @@ export function SignupWizard() {
       }
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Signup failed");
-
       if (data.checkoutForm) {
         submitPayfastForm(data.checkoutForm);
       }

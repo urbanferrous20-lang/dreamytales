@@ -3,6 +3,7 @@ import { signupSchema } from "@/lib/types/child";
 import { hashPassword } from "@/lib/auth";
 import { ANALYTICS_EVENTS, logAnalyticsEventFromRequest } from "@/lib/analytics";
 import { prisma } from "@/lib/db";
+import { formatSignupApiError, hasActiveSubscription } from "@/lib/signup-errors";
 import { recurringCharge, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
 import {
   addDays,
@@ -27,9 +28,19 @@ export async function POST(request: NextRequest) {
     const { name, email, password, children, billingInterval } = parsed.data;
     const normalizedEmail = email.trim().toLowerCase();
 
-    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (existing) {
-      return NextResponse.json({ error: "An account with this email already exists" }, { status: 400 });
+    const existing = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      include: { subscription: true },
+    });
+
+    if (existing && hasActiveSubscription(existing.subscription?.status)) {
+      return NextResponse.json(
+        {
+          error:
+            "An account with this email already exists. Sign in at /login — or use Forgot password if you need help.",
+        },
+        { status: 400 }
+      );
     }
 
     const passwordHash = await hashPassword(password);
@@ -39,6 +50,8 @@ export async function POST(request: NextRequest) {
     const nameParts = name.trim().split(" ");
     const firstName = nameParts[0] ?? name;
     const lastName = nameParts.slice(1).join(" ") || firstName;
+
+    await prisma.pendingSignup.deleteMany({ where: { email: normalizedEmail } });
 
     await prisma.pendingSignup.create({
       data: {
@@ -81,11 +94,8 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    const message =
-      error instanceof Error && error.message.includes("PayFast")
-        ? error.message
-        : "Signup failed. Please try again.";
-    console.error("Signup error:", error instanceof Error ? error.message : "unknown");
-    return NextResponse.json({ error: message }, { status: 500 });
+    const { message, status } = formatSignupApiError(error);
+    console.error("Signup error:", error instanceof Error ? error.stack ?? error.message : error);
+    return NextResponse.json({ error: message }, { status });
   }
 }
