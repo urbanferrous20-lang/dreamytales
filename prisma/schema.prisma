@@ -54,7 +54,7 @@ model ChildProfile {
   name           String
   age            Int
   pronouns       String
-  interests      String
+  interests      String   @db.Text
   favoriteColors String
   favoriteToy    String?
   petInfo        String?
@@ -70,7 +70,7 @@ model ChildProfile {
   moralTheme     String?
   readAloudBy     String   @default("parent")
   language       String   @default("english")
-  characterBible String?
+  characterBible String?  @db.Text
   styleAnchorUrl String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -99,7 +99,7 @@ model Story {
   childId   String
   child     ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
   title     String
-  summary   String
+  summary   String   @db.Text
   pdfPath   String
   storyDate DateTime
   sentAt    DateTime?
@@ -114,7 +114,7 @@ model PendingSignup {
   email     String
   name      String
   passwordHash String
-  childrenJson String
+  childrenJson String @db.Text
   billingInterval String @default("monthly")
   agreedToTerms Boolean @default(false)
   createdAt DateTime @default(now())
@@ -139,7 +139,7 @@ model AnalyticsEvent {
   eventType String
   sessionId String
   path      String?
-  metadata  String?
+  metadata  String?  @db.Text
   createdAt DateTime @default(now())
 
   @@index([eventType, createdAt])

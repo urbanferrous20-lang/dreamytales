@@ -6,9 +6,21 @@ import { childProfileSchema, type ChildProfileInput } from "@/lib/types/child";
 import type { User } from "@prisma/client";
 
 function parseStoredChildren(childrenJson: string): ChildProfileInput[] | null {
+  const trimmed = childrenJson.trim();
+  if (!trimmed) {
+    console.error("activateSignup: childrenJson is empty");
+    return null;
+  }
+
   try {
-    const raw = JSON.parse(childrenJson) as unknown;
-    if (!Array.isArray(raw) || raw.length === 0) return null;
+    const raw = JSON.parse(trimmed) as unknown;
+    if (!Array.isArray(raw) || raw.length === 0) {
+      console.error(
+        "activateSignup: childrenJson is not a non-empty array",
+        `(length ${trimmed.length}, preview: ${trimmed.slice(0, 160)}${trimmed.length > 160 ? "…" : ""})`
+      );
+      return null;
+    }
 
     const parsed = raw.map((child) => childProfileSchema.safeParse(child));
     if (parsed.every((result) => result.success)) {
@@ -48,7 +60,12 @@ function parseStoredChildren(childrenJson: string): ChildProfileInput[] | null {
         language: (child.language as ChildProfileInput["language"]) ?? "english",
       };
     });
-  } catch {
+  } catch (error) {
+    console.error(
+      "activateSignup: invalid childrenJson",
+      error instanceof Error ? error.message : error,
+      `(length ${trimmed.length}, preview: ${trimmed.slice(0, 160)}${trimmed.length > 160 ? "…" : ""})`
+    );
     return null;
   }
 }
@@ -160,7 +177,11 @@ export async function activateSignup(
 
     const children = parseStoredChildren(pending.childrenJson);
     if (!children) {
-      console.error("activateSignup: could not parse children for", signupId);
+      console.error(
+        "activateSignup: could not parse children for",
+        signupId,
+        `(stored length: ${pending.childrenJson.length})`
+      );
       return null;
     }
 

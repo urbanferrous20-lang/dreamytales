@@ -21,7 +21,13 @@ async function main() {
       activated += 1;
       console.log(`Activated ${signup.email} (${signup.id})`);
     } else {
+      const jsonLen = signup.childrenJson.length;
+      const truncated = jsonLen === 191 || !signup.childrenJson.trimEnd().endsWith("]");
       console.log(`Skipped ${signup.email} (${signup.id}) — could not activate`);
+      console.log(`  childrenJson length: ${jsonLen}${truncated ? " (likely truncated — run db:push, then sign up again)" : ""}`);
+      if (jsonLen > 0) {
+        console.log(`  preview: ${signup.childrenJson.slice(0, 200)}${jsonLen > 200 ? "…" : ""}`);
+      }
     }
   }
 
