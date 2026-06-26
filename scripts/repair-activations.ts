@@ -3,7 +3,7 @@
  * Run on Plesk: npm run repair:activations
  */
 import { PrismaClient } from "@prisma/client";
-import { activateSignup } from "../lib/signup-activate-core";
+import { activateSignup, describePendingSignupIssue } from "../lib/signup-activate-core";
 
 const prisma = new PrismaClient();
 
@@ -22,9 +22,10 @@ async function main() {
       console.log(`Activated ${signup.email} (${signup.id})`);
     } else {
       const jsonLen = signup.childrenJson.length;
-      const truncated = jsonLen === 191 || !signup.childrenJson.trimEnd().endsWith("]");
+      const issue = describePendingSignupIssue(signup.childrenJson);
       console.log(`Skipped ${signup.email} (${signup.id}) — could not activate`);
-      console.log(`  childrenJson length: ${jsonLen}${truncated ? " (likely truncated — run db:push, then sign up again)" : ""}`);
+      console.log(`  childrenJson length: ${jsonLen}`);
+      if (issue) console.log(`  reason: ${issue}`);
       if (jsonLen > 0) {
         console.log(`  preview: ${signup.childrenJson.slice(0, 200)}${jsonLen > 200 ? "…" : ""}`);
       }

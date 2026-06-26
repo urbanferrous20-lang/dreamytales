@@ -5,8 +5,9 @@ import { prisma } from "@/lib/db";
 import {
   activatePendingSignupByEmail,
   activateSignup,
+  describePendingSignupIssue,
   findLatestPendingSignup,
-} from "@/lib/signup-activate";
+} from "@/lib/signup-activate-core";
 import type { User } from "@prisma/client";
 
 function parseMetadataEmail(metadata: string | null): string | null {

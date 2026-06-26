@@ -72,17 +72,6 @@ function parseStoredChildren(childrenJson: string): ChildProfileInput[] | null {
 
 async function createChildProfiles(userId: string, children: ChildProfileInput[]): Promise<void> {
   for (const child of children) {
-    let characterBible: string | null = null;
-    try {
-      if (process.env.DEEPSEEK_API_KEY) {
-        const { generateCharacterBible } = await import("@/lib/story-generator");
-        const bible = await generateCharacterBible(child);
-        characterBible = JSON.stringify(bible);
-      }
-    } catch {
-      // Character bible can be generated on first story if API unavailable
-    }
-
     await prisma.childProfile.create({
       data: {
         userId,
@@ -105,7 +94,6 @@ async function createChildProfiles(userId: string, children: ChildProfileInput[]
         moralTheme: child.moralTheme ?? null,
         readAloudBy: child.readAloudBy,
         language: child.language,
-        characterBible,
       },
     });
   }
@@ -216,12 +204,20 @@ export async function activateSignup(
         existingStatus: existing.subscription?.status,
       });
 
-      if (existing.children.length === 0) {
-        await createChildProfiles(existing.id, children);
-      }
-
       await prisma.pendingSignup.delete({ where: { id: signupId } });
       await logSubscriptionActivated(signupId, pending.email, children.length);
+
+      if (existing.children.length === 0) {
+        try {
+          await createChildProfiles(existing.id, children);
+        } catch (error) {
+          console.error(
+            "activateSignup: child profiles failed after account activation",
+            signupId,
+            error instanceof Error ? error.stack ?? error.message : error
+          );
+        }
+      }
 
       return prisma.user.findUnique({ where: { id: existing.id } });
     }
@@ -245,9 +241,18 @@ export async function activateSignup(
       },
     });
 
-    await createChildProfiles(user.id, children);
     await prisma.pendingSignup.delete({ where: { id: signupId } });
     await logSubscriptionActivated(signupId, pending.email, children.length);
+
+    try {
+      await createChildProfiles(user.id, children);
+    } catch (error) {
+      console.error(
+        "activateSignup: child profiles failed after account activation",
+        signupId,
+        error instanceof Error ? error.stack ?? error.message : error
+      );
+    }
 
     return user;
   } catch (error) {
@@ -282,4 +287,23 @@ export async function findLatestPendingSignup(email: string) {
     where: { email: email.trim().toLowerCase() },
     orderBy: { createdAt: "desc" },
   });
+}
+
+export function describePendingSignupIssue(childrenJson: string): string | null {
+  const trimmed = childrenJson.trim();
+  if (!trimmed) {
+    return "Your child details were not saved during signup. Please sign up again.";
+  }
+  if (trimmed.length === 191 || !trimmed.endsWith("]")) {
+    return "Your child details were cut off in the database. The server needs db:push, then please sign up again.";
+  }
+  try {
+    const raw = JSON.parse(trimmed) as unknown;
+    if (!Array.isArray(raw) || raw.length === 0) {
+      return "Your child details were saved incorrectly. Please sign up again.";
+    }
+  } catch {
+    return "Your child details could not be read. Please sign up again.";
+  }
+  return null;
 }

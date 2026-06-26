@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, isSecureRequest, setSessionCookie } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { describePendingSignupIssue, findLatestPendingSignup } from "@/lib/signup-activate-core";
 import {
   findEmailForSignupId,
   getSignupRecoveryStatus,
@@ -38,6 +40,15 @@ export async function POST(request: NextRequest) {
       } else if (status.userFound && password) {
         error =
           "Your account exists but the password did not match. Try the exact password from signup, or use Forgot password.";
+      } else if (status.pendingFound) {
+        const pending =
+          (signupId
+            ? await prisma.pendingSignup.findUnique({ where: { id: signupId } })
+            : email
+              ? await findLatestPendingSignup(email)
+              : null) ?? null;
+        const pendingIssue = pending ? describePendingSignupIssue(pending.childrenJson) : null;
+        if (pendingIssue) error = pendingIssue;
       }
 
       return NextResponse.json({ error, recovery: status }, { status: 404 });

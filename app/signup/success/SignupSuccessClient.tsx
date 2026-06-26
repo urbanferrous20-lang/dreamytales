@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const COMPLETE_ATTEMPTS = 8;
-const COMPLETE_RETRY_MS = 2000;
+const COMPLETE_ATTEMPTS = 12;
+const COMPLETE_RETRY_MS = 2500;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -67,7 +67,11 @@ export function SignupSuccessClient({ initialEmail = "" }: { initialEmail?: stri
           }
 
           if (res.status === 404 && attempt < COMPLETE_ATTEMPTS - 1) {
-            setMessage("Confirming your payment with PayFast…");
+            setMessage(
+              attempt < 3
+                ? "Setting up your account…"
+                : "Still confirming your payment — almost there…"
+            );
             await sleep(COMPLETE_RETRY_MS);
             continue;
           }
