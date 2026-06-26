@@ -44,7 +44,16 @@ export default function ForgotPasswordPage() {
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-6 text-sm">{error}</div>
       )}
       {message && (
-        <div className="bg-mint/20 border border-mint/40 text-navy rounded-xl p-4 mb-6 text-sm">{message}</div>
+        <div className="bg-mint/20 border border-mint/40 text-navy rounded-xl p-4 mb-6 text-sm space-y-2">
+          <p>{message}</p>
+          <p className="text-navy/60 text-xs">
+            Check spam/junk. If nothing arrives, your account may not be set up yet — try{" "}
+            <Link href="/signup/success" className="underline">
+              finishing signup
+            </Link>{" "}
+            or email Admin@dreamytales.co.za.
+          </p>
+        </div>
       )}
 
       {!sent ? (

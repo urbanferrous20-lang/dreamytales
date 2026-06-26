@@ -2,6 +2,13 @@ import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/admin-auth";
 import { getAdminDashboardStats, formatRevenue } from "@/lib/admin-stats";
 import { formatBytes } from "@/lib/storage-stats";
+import {
+  formatSmtpError,
+  getFromAddress,
+  getSmtpHostForDiagnostics,
+  isSmtpConfigured,
+  verifySmtpConnection,
+} from "@/lib/smtp";
 
 function MetricCard({
   title,
@@ -88,6 +95,18 @@ export default async function AdminDashboardPage() {
         : "Could not load dashboard data. Check DATABASE_URL and run npm run db:push.";
   }
 
+  const smtpConfigured = isSmtpConfigured();
+  let smtpCanConnect = false;
+  let smtpError: string | null = null;
+  if (smtpConfigured) {
+    try {
+      await verifySmtpConnection();
+      smtpCanConnect = true;
+    } catch (error) {
+      smtpError = formatSmtpError(error);
+    }
+  }
+
   if (dbError || !stats) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16">
@@ -123,6 +142,32 @@ export default async function AdminDashboardPage() {
           </button>
         </form>
       </div>
+
+      {!smtpConfigured || !smtpCanConnect ? (
+        <div className="mb-8 rounded-2xl border border-coral/40 bg-coral/10 p-5 text-cream">
+          <p className="font-medium text-coral-100">Outgoing email is not working</p>
+          <p className="text-sm text-cream/70 mt-2">
+            Password reset and story emails will not send until SMTP is configured in{" "}
+            <code className="text-cream/90">httpdocs/.env</code>.
+          </p>
+          {smtpConfigured ? (
+            <p className="text-sm text-coral-100 mt-2">
+              Host {getSmtpHostForDiagnostics()} — {smtpError ?? "connection failed"}
+            </p>
+          ) : (
+            <p className="text-sm text-cream/60 mt-2">
+              Add SMTP_HOST, SMTP_USER, SMTP_PASS (mailbox password for Admin@dreamytales.co.za).
+            </p>
+          )}
+          <p className="text-xs text-cream/50 mt-3">
+            Test on Plesk: <code className="text-cream/80">npm run smtp:test -- Admin@dreamytales.co.za</code>
+          </p>
+        </div>
+      ) : (
+        <p className="mb-8 text-xs text-cream/50">
+          SMTP OK ({getSmtpHostForDiagnostics()}, from {getFromAddress()})
+        </p>
+      )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-gold/20 rounded-2xl p-4 border border-gold/30">
