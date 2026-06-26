@@ -56,6 +56,25 @@ export async function sendPasswordResetEmail(params: {
   });
 }
 
+export async function sendSignupCompleteEmail(params: {
+  to: string;
+  parentName: string;
+  completeUrl: string;
+}): Promise<void> {
+  await sendSmtpMail({
+    to: params.to,
+    subject: "Finish setting up your Dreamy Tales account",
+    html: `
+      <div style="font-family: Georgia, serif; max-width: 560px; margin: 0 auto; color: #1e293b;">
+        <p>Hi ${params.parentName},</p>
+        <p>Your PayFast payment went through, but your Dreamy Tales account still needs to be activated.</p>
+        <p><a href="${params.completeUrl}">Finish account setup</a></p>
+        <p style="color: #64748b; font-size: 14px;">Then sign in with the email and password you chose during signup.</p>
+      </div>
+    `,
+  });
+}
+
 export async function sendCancellationEmail(params: {
   to: string;
   parentName: string;

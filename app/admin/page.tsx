@@ -146,6 +146,28 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
+      {(stats.accountsMissingSubscription > 0 ||
+        (stats.signupSubmits.total > 0 && stats.activeSubscribers === 0)) && (
+        <div className="mb-8 rounded-2xl border border-amber-300/40 bg-amber-100/10 p-5 text-cream">
+          <p className="font-medium text-amber-100">Activation may be incomplete</p>
+          <p className="text-sm text-cream/70 mt-2">
+            {stats.totalAccounts} parent account(s) in the database, but only {stats.activeSubscribers}{" "}
+            active subscription(s).
+            {stats.accountsMissingSubscription > 0
+              ? ` ${stats.accountsMissingSubscription} account(s) have no subscription row.`
+              : ""}
+            {stats.payfastCheckouts.total > 0
+              ? ` PayFast reported ${stats.payfastCheckouts.total} completed checkout(s).`
+              : ""}
+          </p>
+          <p className="text-xs text-cream/50 mt-2">
+            On Plesk run{" "}
+            <code className="text-cream/80">npm run repair:activations</code> after deploy, then check
+            PayFast ITN logs and <code className="text-cream/80">/api/health</code>.
+          </p>
+        </div>
+      )}
+
       <section className="bg-white rounded-2xl border border-navy/5 shadow-sm p-6 mb-8">
         <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
           <div>
@@ -249,6 +271,31 @@ export default async function AdminDashboardPage() {
           month={stats.subscriptions.monthToDate}
           total={stats.subscriptions.total}
         />
+        <MetricCard
+          title="PayFast payments recorded"
+          today={stats.payfastPayments.today}
+          month={stats.payfastPayments.monthToDate}
+          total={stats.payfastPayments.total}
+        />
+        <MetricCard
+          title="PayFast checkouts completed (ITN)"
+          today={stats.payfastCheckouts.today}
+          month={stats.payfastCheckouts.monthToDate}
+          total={stats.payfastCheckouts.total}
+        />
+        <div className="bg-white rounded-2xl p-5 border border-navy/5 shadow-sm">
+          <h3 className="text-sm font-medium text-navy/60 mb-3">Parent accounts</h3>
+          <div className="grid grid-cols-2 gap-3 text-center">
+            <div>
+              <p className="text-xs text-navy/40 mb-1">Registered</p>
+              <p className="text-xl font-semibold text-navy">{stats.totalAccounts}</p>
+            </div>
+            <div>
+              <p className="text-xs text-navy/40 mb-1">Missing subscription</p>
+              <p className="text-xl font-semibold text-navy">{stats.accountsMissingSubscription}</p>
+            </div>
+          </div>
+        </div>
         <RevenueCard
           title="Revenue (paid)"
           yesterday={stats.revenue.yesterday}

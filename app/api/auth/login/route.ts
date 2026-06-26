@@ -33,7 +33,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    const valid = await verifyPassword(password, user.passwordHash);
+    let valid = await verifyPassword(password, user.passwordHash);
+    if (!valid) {
+      const pending = await prisma.pendingSignup.findFirst({
+        where: {
+          email: normalizedEmail,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (pending && (await verifyPassword(password, pending.passwordHash))) {
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: pending.passwordHash },
+          }),
+          prisma.pendingSignup.delete({ where: { id: pending.id } }),
+        ]);
+        valid = true;
+      }
+    }
+
     if (!valid) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }

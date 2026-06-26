@@ -18,7 +18,7 @@ export function SignupSuccessClient() {
         undefined;
       const email = sessionStorage.getItem("dreamytales_signup_email") ?? undefined;
 
-      if (!email) {
+      if (!signupId && !email) {
         setStatus("ready");
         setMessage(
           "Your payment was successful. Sign in with the email and password you chose during signup."

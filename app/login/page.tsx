@@ -79,6 +79,12 @@ export default function LoginPage() {
           Start free trial
         </Link>
       </p>
+      <p className="text-center text-xs text-navy/50 mt-4">
+        Just paid via PayFast?{" "}
+        <Link href="/signup/success" className="underline">
+          Finish account setup
+        </Link>
+      </p>
     </div>
   );
 }

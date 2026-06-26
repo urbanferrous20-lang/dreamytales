@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendPasswordResetEmail } from "@/lib/email";
+import { sendPasswordResetEmail, sendSignupCompleteEmail } from "@/lib/email";
 import { createPasswordResetToken } from "@/lib/password-reset";
 import { prisma } from "@/lib/db";
 import { getSiteUrl } from "@/lib/site";
@@ -20,7 +20,10 @@ export async function POST(request: NextRequest) {
     if (!isSmtpConfigured()) {
       console.error("Password reset requested but SMTP is not configured");
       return NextResponse.json(
-        { error: "Password reset is temporarily unavailable. Please contact support." },
+        {
+          error:
+            "Password reset email is not configured on the server yet. If you just paid via PayFast, open the signup success link from your browser history or try signing in with your signup password.",
+        },
         { status: 503 }
       );
     }
@@ -43,6 +46,38 @@ export async function POST(request: NextRequest) {
           { error: "Could not send reset email. Please try again later." },
           { status: 500 }
         );
+      }
+    } else {
+      const pending = await prisma.pendingSignup.findFirst({
+        where: {
+          email: normalizedEmail,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (pending) {
+        const completeUrl = `${getSiteUrl()}/signup/success?ref=${encodeURIComponent(pending.id)}`;
+
+        try {
+          await sendSignupCompleteEmail({
+            to: pending.email,
+            parentName: pending.name,
+            completeUrl,
+          });
+        } catch (error) {
+          console.error("Failed to send signup complete email:", error);
+          return NextResponse.json(
+            { error: "Could not send email. Please try again later." },
+            { status: 500 }
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          message:
+            "We found a recent signup for that email and sent a link to finish setting up your account. Check your inbox and spam folder.",
+        });
       }
     }
 

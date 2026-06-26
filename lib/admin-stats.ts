@@ -29,15 +29,14 @@ function endOfYesterday(): Date {
 }
 
 async function uniqueVisitorsSince(since: Date): Promise<number> {
-  const events = await prisma.analyticsEvent.findMany({
+  const groups = await prisma.analyticsEvent.groupBy({
+    by: ["sessionId"],
     where: {
       eventType: ANALYTICS_EVENTS.PAGE_VIEW,
       createdAt: { gte: since },
     },
-    select: { sessionId: true },
-    distinct: ["sessionId"],
   });
-  return events.length;
+  return groups.length;
 }
 
 async function countEventsSince(eventType: string, since: Date): Promise<number> {
@@ -56,6 +55,15 @@ async function sumRevenueBetween(start: Date, end: Date): Promise<number> {
     _sum: { amountGross: true },
   });
   return result._sum.amountGross ?? 0;
+}
+
+async function countPaymentsSince(since: Date): Promise<number> {
+  return prisma.payment.count({
+    where: {
+      paymentStatus: "COMPLETE",
+      createdAt: { gte: since },
+    },
+  });
 }
 
 async function countSubscriptionsSince(since: Date): Promise<number> {
@@ -94,6 +102,10 @@ export type AdminDashboardStats = {
   trialSubscribers: number;
   storiesSentToday: number;
   conversionRate: number;
+  totalAccounts: number;
+  accountsMissingSubscription: number;
+  payfastPayments: { today: number; monthToDate: number; total: number };
+  payfastCheckouts: { today: number; monthToDate: number; total: number };
   reviews: AdminReviewRow[];
   storage: StorageStats;
 };
@@ -146,6 +158,14 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     storiesSentToday,
     siteReviews,
     storyReviews,
+    totalAccounts,
+    accountsMissingSubscription,
+    payfastPaymentsToday,
+    payfastPaymentsMonth,
+    payfastPaymentsTotal,
+    payfastCheckoutsToday,
+    payfastCheckoutsMonth,
+    payfastCheckoutsTotal,
   ] = await Promise.all([
     uniqueVisitorsSince(todayStart),
     uniqueVisitorsSince(monthStart),
@@ -191,6 +211,14 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
         },
       },
     }),
+    prisma.user.count(),
+    prisma.user.count({ where: { subscription: null } }),
+    countPaymentsSince(todayStart),
+    countPaymentsSince(monthStart),
+    countPaymentsSince(new Date(0)),
+    countEventsSince(ANALYTICS_EVENTS.PAYFAST_PAYMENT_COMPLETE, todayStart),
+    countEventsSince(ANALYTICS_EVENTS.PAYFAST_PAYMENT_COMPLETE, monthStart),
+    countEventsSince(ANALYTICS_EVENTS.PAYFAST_PAYMENT_COMPLETE, new Date(0)),
   ]);
 
   const abandonedToday = Math.max(0, signupSubmitsToday - activationsToday);
@@ -262,6 +290,18 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     trialSubscribers,
     storiesSentToday,
     conversionRate,
+    totalAccounts,
+    accountsMissingSubscription,
+    payfastPayments: {
+      today: payfastPaymentsToday,
+      monthToDate: payfastPaymentsMonth,
+      total: payfastPaymentsTotal,
+    },
+    payfastCheckouts: {
+      today: payfastCheckoutsToday,
+      monthToDate: payfastCheckoutsMonth,
+      total: payfastCheckoutsTotal,
+    },
     reviews,
     storage,
   };

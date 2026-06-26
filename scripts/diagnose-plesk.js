@@ -77,6 +77,18 @@ if (process.env.ADMIN_PASSWORD?.trim()) {
   fail("Admin password not set — add ADMIN_PASSWORD=your-password to .env");
 }
 
+if (isSmtpConfigured()) {
+  ok("SMTP is configured (SMTP_HOST, SMTP_USER, SMTP_PASS)");
+  info(`SMTP_FROM=${process.env.SMTP_FROM ?? "(default)"}`);
+} else {
+  fail("SMTP not configured — password reset and story emails will not send");
+  info("Add SMTP_HOST, SMTP_USER, SMTP_PASS to .env (see .env.example)");
+}
+
+function isSmtpConfigured() {
+  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
 try {
   require("next/dist/cli/next-start");
   ok("next/dist/cli/next-start loads");

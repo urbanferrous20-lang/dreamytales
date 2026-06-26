@@ -9,19 +9,18 @@ export async function POST(request: NextRequest) {
     const signupId = body.signupId?.trim();
     const email = body.email?.trim().toLowerCase();
 
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    if (!signupId && !email) {
+      return NextResponse.json({ error: "Signup reference or email is required" }, { status: 400 });
     }
 
-    let user = await prisma.user.findUnique({ where: { email } });
+    let user = email ? await prisma.user.findUnique({ where: { email } }) : null;
 
-    if (!user) {
-      if (signupId) {
-        user = await activateSignup(signupId);
-      }
-      if (!user) {
-        user = await activatePendingSignupByEmail(email);
-      }
+    if (!user && signupId) {
+      user = await activateSignup(signupId);
+    }
+
+    if (!user && email) {
+      user = await activatePendingSignupByEmail(email);
     }
 
     if (!user) {
