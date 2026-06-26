@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db";
 import { ANALYTICS_EVENTS, logAnalyticsEvent } from "@/lib/analytics";
 import { addDays } from "@/lib/payfast";
 import { recurringCharge, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
-import { generateCharacterBible } from "@/lib/story-generator";
 import { childProfileSchema, type ChildProfileInput } from "@/lib/types/child";
 import type { User } from "@prisma/client";
 
@@ -63,6 +62,7 @@ export async function activateSignup(
     let characterBible: string | null = null;
     try {
       if (process.env.DEEPSEEK_API_KEY) {
+        const { generateCharacterBible } = await import("@/lib/story-generator");
         const bible = await generateCharacterBible(child);
         characterBible = JSON.stringify(bible);
       }
