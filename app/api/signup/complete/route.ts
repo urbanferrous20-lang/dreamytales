@@ -1,56 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  createSession,
-  hashPassword,
-  isSecureRequest,
-  setSessionCookie,
-} from "@/lib/auth";
-import {
-  activatePendingSignupByEmail,
-  activateSignup,
-  findLatestPendingSignup,
-} from "@/lib/signup-activate";
-import { prisma } from "@/lib/db";
-
-async function resolveUserAfterPayment(params: {
-  signupId?: string;
-  email?: string;
-  password?: string;
-}) {
-  let user = null;
-
-  if (params.signupId) {
-    user = await activateSignup(params.signupId);
-  }
-
-  if (!user && params.email) {
-    user = await prisma.user.findUnique({ where: { email: params.email } });
-  }
-
-  if (!user && params.email) {
-    user = await activatePendingSignupByEmail(params.email, undefined, { allowExpired: true });
-  }
-
-  if (user && params.password) {
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash: await hashPassword(params.password) },
-    });
-  } else if (!user && params.email && params.password) {
-    const pending = await findLatestPendingSignup(params.email);
-    if (pending && params.signupId === pending.id) {
-      user = await activateSignup(pending.id);
-      if (user) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { passwordHash: await hashPassword(params.password) },
-        });
-      }
-    }
-  }
-
-  return user;
-}
+import { createSession, isSecureRequest, setSessionCookie } from "@/lib/auth";
+import { findEmailForSignupId, resolveUserAfterPayment } from "@/lib/signup-complete";
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,11 +10,15 @@ export async function POST(request: NextRequest) {
       password?: string;
     };
     const signupId = body.signupId?.trim();
-    const email = body.email?.trim().toLowerCase();
+    let email = body.email?.trim().toLowerCase();
     const password = body.password;
 
     if (!signupId && !email) {
       return NextResponse.json({ error: "Signup reference or email is required" }, { status: 400 });
+    }
+
+    if (signupId && !email) {
+      email = (await findEmailForSignupId(signupId)) ?? undefined;
     }
 
     const user = await resolveUserAfterPayment({ signupId, email, password });
@@ -88,6 +42,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT") {
+      throw error;
+    }
     console.error("Signup complete error:", error instanceof Error ? error.message : "unknown");
     return NextResponse.json({ error: "Could not finish setting up your account" }, { status: 500 });
   }

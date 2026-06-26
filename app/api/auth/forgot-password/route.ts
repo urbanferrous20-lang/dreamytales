@@ -35,7 +35,20 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
     if (user) {
-      const token = await createPasswordResetToken(user.id);
+      let token: string;
+      try {
+        token = await createPasswordResetToken(user.id);
+      } catch (error) {
+        console.error("Password reset token error:", error instanceof Error ? error.message : error);
+        return NextResponse.json(
+          {
+            error:
+              "Password reset is not set up on the server database yet. Run npm run db:push on Plesk, or use npm run user:reset-password.",
+          },
+          { status: 503 }
+        );
+      }
+
       const resetUrl = `${getSiteUrl()}/reset-password?token=${encodeURIComponent(token)}`;
 
       try {

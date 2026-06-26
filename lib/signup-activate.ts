@@ -10,17 +10,45 @@ function parseStoredChildren(childrenJson: string): ChildProfileInput[] | null {
   try {
     const raw = JSON.parse(childrenJson) as unknown;
     if (!Array.isArray(raw) || raw.length === 0) return null;
+
     const parsed = raw.map((child) => childProfileSchema.safeParse(child));
-    if (parsed.some((result) => !result.success)) {
-      console.error(
-        "activateSignup: invalid stored child data",
-        parsed
-          .filter((result) => !result.success)
-          .map((result) => result.error.flatten())
-      );
-      return null;
+    if (parsed.every((result) => result.success)) {
+      return parsed.map((result) => result.data as ChildProfileInput);
     }
-    return parsed.map((result) => result.data as ChildProfileInput);
+
+    console.warn(
+      "activateSignup: relaxing stored child validation",
+      parsed
+        .filter((result) => !result.success)
+        .map((result) => result.error.flatten())
+    );
+
+    return raw.map((entry) => {
+      const child = entry as Record<string, unknown>;
+      return {
+        name: String(child.name ?? "Child"),
+        age: Number(child.age ?? 5),
+        pronouns: (child.pronouns as ChildProfileInput["pronouns"]) ?? "they/them",
+        interests: Array.isArray(child.interests)
+          ? child.interests.map(String)
+          : ["nature"],
+        favoriteColors: String(child.favoriteColors ?? "Blue"),
+        favoriteToy: child.favoriteToy ? String(child.favoriteToy) : undefined,
+        petInfo: child.petInfo ? String(child.petInfo) : undefined,
+        siblingNames: child.siblingNames ? String(child.siblingNames) : undefined,
+        bestFriend: child.bestFriend ? String(child.bestFriend) : undefined,
+        favoritePlace: child.favoritePlace ? String(child.favoritePlace) : undefined,
+        province: (child.province as ChildProfileInput["province"]) ?? "Gauteng",
+        cityOrTown: String(child.cityOrTown ?? "Johannesburg"),
+        customCity: child.customCity ? String(child.customCity) : undefined,
+        suburb: child.suburb ? String(child.suburb) : undefined,
+        topicsToAvoid: child.topicsToAvoid ? String(child.topicsToAvoid) : undefined,
+        storyMood: (child.storyMood as ChildProfileInput["storyMood"]) ?? "gentle",
+        moralTheme: child.moralTheme ? String(child.moralTheme) : undefined,
+        readAloudBy: (child.readAloudBy as ChildProfileInput["readAloudBy"]) ?? "parent",
+        language: (child.language as ChildProfileInput["language"]) ?? "english",
+      };
+    });
   } catch {
     return null;
   }

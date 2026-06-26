@@ -55,8 +55,9 @@ export async function POST(request: NextRequest) {
 
     await logAnalyticsEventFromRequest(request, {
       eventType: ANALYTICS_EVENTS.SIGNUP_SUBMIT,
+      sessionId: signupId,
       path: "/signup",
-      metadata: { signupId, childCount: children.length, billingInterval },
+      metadata: { signupId, email: normalizedEmail, childCount: children.length, billingInterval },
     });
 
     const formData = buildSubscriptionFormData({
