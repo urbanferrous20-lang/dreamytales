@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
           userId: user.id,
           subscriptionId: user.subscription?.id ?? null,
           payfastPaymentId,
+          signupId: signupId ?? null,
           amountGross: amount,
           amountFee: parseFloat(data.amount_fee ?? "0"),
           paymentStatus: "COMPLETE",
@@ -122,6 +123,7 @@ export async function POST(request: NextRequest) {
         update: {
           userId: user.id,
           subscriptionId: user.subscription?.id ?? null,
+          signupId: signupId ?? null,
           amountGross: amount,
           amountFee: parseFloat(data.amount_fee ?? "0"),
           paymentStatus: "COMPLETE",

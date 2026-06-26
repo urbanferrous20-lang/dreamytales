@@ -12,6 +12,7 @@ model User {
   email        String         @unique
   name         String
   passwordHash String
+  signupRef    String?        @unique
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   children     ChildProfile[]
@@ -152,6 +153,7 @@ model Payment {
   user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   subscriptionId   String?
   payfastPaymentId String?   @unique
+  signupId         String?
   amountGross      Float
   amountFee        Float     @default(0)
   paymentStatus    String
@@ -160,4 +162,5 @@ model Payment {
 
   @@index([createdAt])
   @@index([paymentStatus, createdAt])
+  @@index([signupId])
 }

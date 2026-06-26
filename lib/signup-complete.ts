@@ -9,6 +9,16 @@ import {
 } from "@/lib/signup-activate";
 import type { User } from "@prisma/client";
 
+function parseMetadataEmail(metadata: string | null): string | null {
+  if (!metadata) return null;
+  try {
+    const meta = JSON.parse(metadata) as { email?: string };
+    return meta.email?.trim().toLowerCase() ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function findEmailForSignupId(signupId: string): Promise<string | null> {
   const pending = await prisma.pendingSignup.findUnique({
     where: { id: signupId },
@@ -16,22 +26,59 @@ export async function findEmailForSignupId(signupId: string): Promise<string | n
   });
   if (pending?.email) return pending.email.toLowerCase();
 
-  const event = await prisma.analyticsEvent.findFirst({
-    where: {
-      eventType: ANALYTICS_EVENTS.SIGNUP_SUBMIT,
-      OR: [{ sessionId: signupId }, { metadata: { contains: signupId } }],
-    },
-    orderBy: { createdAt: "desc" },
+  const user = await prisma.user.findUnique({
+    where: { signupRef: signupId },
+    select: { email: true },
   });
+  if (user?.email) return user.email.toLowerCase();
 
-  if (!event?.metadata) return null;
+  const payment = await prisma.payment.findFirst({
+    where: {
+      OR: [{ signupId }, { payfastPaymentId: signupId }],
+    },
+    include: { user: { select: { email: true } } },
+  });
+  if (payment?.user?.email) return payment.user.email.toLowerCase();
 
-  try {
-    const meta = JSON.parse(event.metadata) as { email?: string };
-    return meta.email?.trim().toLowerCase() ?? null;
-  } catch {
-    return null;
+  const eventTypes = [
+    ANALYTICS_EVENTS.SIGNUP_SUBMIT,
+    ANALYTICS_EVENTS.SUBSCRIPTION_ACTIVATED,
+    ANALYTICS_EVENTS.PAYFAST_PAYMENT_COMPLETE,
+  ];
+
+  for (const eventType of eventTypes) {
+    const event = await prisma.analyticsEvent.findFirst({
+      where: {
+        eventType,
+        OR: [{ sessionId: signupId }, { metadata: { contains: signupId } }],
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    const email = parseMetadataEmail(event?.metadata ?? null);
+    if (email) return email;
   }
+
+  return null;
+}
+
+export async function findUserBySignupId(signupId: string): Promise<User | null> {
+  const byRef = await prisma.user.findUnique({ where: { signupRef: signupId } });
+  if (byRef) return byRef;
+
+  const payment = await prisma.payment.findFirst({
+    where: {
+      OR: [{ signupId }, { payfastPaymentId: signupId }],
+    },
+    include: { user: true },
+  });
+  if (payment?.user) return payment.user;
+
+  const email = await findEmailForSignupId(signupId);
+  if (email) {
+    return prisma.user.findUnique({ where: { email } });
+  }
+
+  return null;
 }
 
 export async function resolveUserAfterPayment(params: {
@@ -48,7 +95,18 @@ export async function resolveUserAfterPayment(params: {
   let user: User | null = null;
 
   if (params.signupId) {
+    user = await findUserBySignupId(params.signupId);
+  }
+
+  if (!user && params.signupId) {
     user = await activateSignup(params.signupId);
+  }
+
+  if (!user && email) {
+    const latestPending = await findLatestPendingSignup(email);
+    if (latestPending) {
+      user = await activateSignup(latestPending.id);
+    }
   }
 
   if (!user && email) {
@@ -64,18 +122,53 @@ export async function resolveUserAfterPayment(params: {
       where: { id: user.id },
       data: { passwordHash: await hashPassword(params.password) },
     });
-  } else if (!user && email && params.password && params.signupId) {
-    const pending = await findLatestPendingSignup(email);
-    if (pending?.id === params.signupId) {
-      user = await activateSignup(pending.id);
-      if (user) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { passwordHash: await hashPassword(params.password) },
-        });
-      }
-    }
   }
 
   return user;
+}
+
+export type SignupRecoveryStatus = {
+  signupId?: string;
+  email?: string;
+  pendingFound: boolean;
+  userFound: boolean;
+  paymentFound: boolean;
+};
+
+export async function getSignupRecoveryStatus(params: {
+  signupId?: string;
+  email?: string;
+}): Promise<SignupRecoveryStatus> {
+  const signupId = params.signupId?.trim();
+  let email = params.email?.trim().toLowerCase();
+
+  if (!email && signupId) {
+    email = (await findEmailForSignupId(signupId)) ?? undefined;
+  }
+
+  const [pending, user, payment] = await Promise.all([
+    signupId
+      ? prisma.pendingSignup.findUnique({ where: { id: signupId } })
+      : email
+        ? findLatestPendingSignup(email)
+        : null,
+    email
+      ? prisma.user.findUnique({ where: { email } })
+      : signupId
+        ? findUserBySignupId(signupId)
+        : null,
+    signupId
+      ? prisma.payment.findFirst({
+          where: { OR: [{ signupId }, { payfastPaymentId: signupId }] },
+        })
+      : null,
+  ]);
+
+  return {
+    signupId,
+    email,
+    pendingFound: Boolean(pending),
+    userFound: Boolean(user),
+    paymentFound: Boolean(payment),
+  };
 }

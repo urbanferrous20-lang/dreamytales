@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, isSecureRequest, setSessionCookie } from "@/lib/auth";
-import { findEmailForSignupId, resolveUserAfterPayment } from "@/lib/signup-complete";
+import {
+  findEmailForSignupId,
+  getSignupRecoveryStatus,
+  resolveUserAfterPayment,
+} from "@/lib/signup-complete";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,13 +28,19 @@ export async function POST(request: NextRequest) {
     const user = await resolveUserAfterPayment({ signupId, email, password });
 
     if (!user) {
-      return NextResponse.json(
-        {
-          error:
-            "Your account is still being set up. Wait a moment and try again, or sign in with the email and password you used at signup.",
-        },
-        { status: 404 }
-      );
+      const status = await getSignupRecoveryStatus({ signupId, email });
+      let error =
+        "We could not finish activating your account yet. Enter your signup email and password below and try again.";
+
+      if (!status.pendingFound && !status.userFound && !status.paymentFound) {
+        error =
+          "We could not find your signup in our system. Please sign up again, or email Admin@dreamytales.co.za with the email you used at checkout.";
+      } else if (status.userFound && password) {
+        error =
+          "Your account exists but the password did not match. Try the exact password from signup, or use Forgot password.";
+      }
+
+      return NextResponse.json({ error, recovery: status }, { status: 404 });
     }
 
     const token = await createSession({
