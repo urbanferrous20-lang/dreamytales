@@ -3,7 +3,7 @@
  * Run on Plesk: npm run repair:activations
  */
 import { PrismaClient } from "@prisma/client";
-import { activateSignup } from "../lib/signup-activate";
+import { activateSignup } from "../lib/signup-activate-core";
 
 const prisma = new PrismaClient();
 
