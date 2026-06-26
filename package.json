@@ -19,6 +19,7 @@
     "sample:languages": "tsx --env-file=.env.local --env-file=.env scripts/build-language-samples.ts",
     "admin:hash-password": "tsx scripts/hash-admin-password.ts",
     "verify:deploy": "node scripts/verify-deploy-files.js",
+    "diagnose:plesk": "node scripts/diagnose-plesk.js",
     "package:plesk": "powershell -ExecutionPolicy Bypass -File scripts/package-for-plesk.ps1"
   },
   "dependencies": {

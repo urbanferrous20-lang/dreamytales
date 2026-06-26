@@ -239,7 +239,7 @@ Check response JSON and parent email with PDF attachment.
 | Issue | What to check |
 |-------|----------------|
 | `schema.prisma` / `JsonLd` Prisma error | Run `node scripts/verify-deploy-files.js` — re-upload ZIP; delete all of `httpdocs` first |
-| 502 / Incomplete response from application | Run **NPM install** → Run script **`build`** → **Restart Node.js**. Check `.next/BUILD_ID` exists. Test `https://dreamytales.co.za/api/health` |
+| 502 / Incomplete response from application | Run **`node scripts/diagnose-plesk.js`** in Run Node.js commands. Then **NPM install** → Run script **`build`** → **Restart Node.js**. Never bind to `HOSTNAME` in start.js. Test `/api/health` |
 | 502 / app not running | Node.js enabled, `start.js` set, Restart Node.js |
 | Build fails | Node 20+, enough disk/RAM; run `npm run build` in Plesk commands |
 | SMTP auth failed | Full email as username, port 465 + `SMTP_SECURE=true` |

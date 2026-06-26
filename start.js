@@ -15,11 +15,18 @@ if (!fs.existsSync(buildIdPath)) {
 }
 
 const port = parseInt(process.env.PORT || "3000", 10);
-const hostname = process.env.HOSTNAME || "0.0.0.0";
-
-const { nextStart } = require("next/dist/cli/next-start");
-
-nextStart({ port, hostname }).catch((error) => {
-  console.error("[dreamy-tales] Failed to start Next.js:", error);
+if (Number.isNaN(port)) {
+  console.error("[dreamy-tales] Invalid PORT:", process.env.PORT);
   process.exit(1);
-});
+}
+
+// Never bind to process.env.HOSTNAME — on Linux/Plesk that is the machine name, not 0.0.0.0,
+// and the reverse proxy cannot reach the app (502 / incomplete response).
+const nextStartModule = require("next/dist/cli/next-start");
+
+nextStartModule
+  .nextStart({ port })
+  .catch((error) => {
+    console.error("[dreamy-tales] Failed to start Next.js:", error);
+    process.exit(1);
+  });
