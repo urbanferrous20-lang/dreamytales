@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+import { SubscriberGoalBanner } from "@/components/admin/SubscriberGoalBanner";
 import { getAdminSession } from "@/lib/admin-auth";
 import { getAdminDashboardStats, formatRevenue } from "@/lib/admin-stats";
+import { getSubscriberGoalProgress } from "@/lib/subscriber-goal";
 import { formatBytes } from "@/lib/storage-stats";
 import {
   formatSmtpError,
@@ -126,6 +128,8 @@ export default async function AdminDashboardPage() {
     );
   }
 
+  const subscriberGoal = getSubscriberGoalProgress(stats.activeSubscribers);
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
@@ -142,6 +146,11 @@ export default async function AdminDashboardPage() {
           </button>
         </form>
       </div>
+
+      <SubscriberGoalBanner
+        progress={subscriberGoal}
+        trialSubscribers={stats.trialSubscribers}
+      />
 
       {!smtpConfigured || !smtpCanConnect ? (
         <div className="mb-8 rounded-2xl border border-coral/40 bg-coral/10 p-5 text-cream">
