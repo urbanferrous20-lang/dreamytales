@@ -197,16 +197,24 @@ export async function activateSignup(
 
 export async function activatePendingSignupByEmail(
   email: string,
-  payfastToken?: string
+  payfastToken?: string,
+  options?: { allowExpired?: boolean }
 ): Promise<User | null> {
   const normalizedEmail = email.trim().toLowerCase();
   const pending = await prisma.pendingSignup.findFirst({
     where: {
       email: normalizedEmail,
-      expiresAt: { gt: new Date() },
+      ...(options?.allowExpired ? {} : { expiresAt: { gt: new Date() } }),
     },
     orderBy: { createdAt: "desc" },
   });
   if (!pending) return null;
   return activateSignup(pending.id, payfastToken);
+}
+
+export async function findLatestPendingSignup(email: string) {
+  return prisma.pendingSignup.findFirst({
+    where: { email: email.trim().toLowerCase() },
+    orderBy: { createdAt: "desc" },
+  });
 }

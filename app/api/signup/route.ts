@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         childrenJson: JSON.stringify(children),
         billingInterval,
         agreedToTerms: true,
-        expiresAt: addDays(new Date(), 1),
+        expiresAt: addDays(new Date(), 7),
       },
     });
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { hashPassword, createSession, setSessionCookie } from "@/lib/auth";
+import { hashPassword, createSession, isSecureRequest, setSessionCookie } from "@/lib/auth";
 import { findValidPasswordResetToken } from "@/lib/password-reset";
 import { prisma } from "@/lib/db";
 
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       email: resetRecord.user.email,
       name: resetRecord.user.name,
     });
-    await setSessionCookie(sessionToken);
+    await setSessionCookie(sessionToken, { secure: isSecureRequest(request) });
 
     return NextResponse.json({ success: true });
   } catch (error) {

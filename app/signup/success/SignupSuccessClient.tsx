@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
+const COMPLETE_ATTEMPTS = 6;
+const COMPLETE_RETRY_MS = 2000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function SignupSuccessClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -16,7 +23,11 @@ export function SignupSuccessClient() {
         searchParams.get("ref") ??
         sessionStorage.getItem("dreamytales_signup_ref") ??
         undefined;
-      const email = sessionStorage.getItem("dreamytales_signup_email") ?? undefined;
+      const email =
+        searchParams.get("email") ??
+        sessionStorage.getItem("dreamytales_signup_email") ??
+        undefined;
+      const password = sessionStorage.getItem("dreamytales_signup_password") ?? undefined;
 
       if (!signupId && !email) {
         setStatus("ready");
@@ -27,26 +38,37 @@ export function SignupSuccessClient() {
       }
 
       try {
-        const res = await fetch("/api/signup/complete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ signupId, email }),
-        });
-        const data = await res.json();
+        for (let attempt = 0; attempt < COMPLETE_ATTEMPTS; attempt += 1) {
+          const res = await fetch("/api/signup/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ signupId, email, password }),
+          });
+          const data = await res.json();
 
-        if (res.ok) {
-          sessionStorage.removeItem("dreamytales_signup_ref");
-          sessionStorage.removeItem("dreamytales_signup_email");
-          router.replace("/dashboard");
-          router.refresh();
+          if (res.ok) {
+            sessionStorage.removeItem("dreamytales_signup_ref");
+            sessionStorage.removeItem("dreamytales_signup_email");
+            sessionStorage.removeItem("dreamytales_signup_password");
+            router.replace("/dashboard");
+            router.refresh();
+            return;
+          }
+
+          if (res.status === 404 && attempt < COMPLETE_ATTEMPTS - 1) {
+            setMessage("Confirming your payment with PayFast…");
+            await sleep(COMPLETE_RETRY_MS);
+            continue;
+          }
+
+          setStatus("ready");
+          setMessage(
+            data.error ??
+              "Your payment went through. Sign in with the email and password you used at signup."
+          );
           return;
         }
-
-        setStatus("ready");
-        setMessage(
-          data.error ??
-            "Your payment went through. Sign in with the email and password you used at signup."
-        );
       } catch {
         setStatus("ready");
         setMessage(

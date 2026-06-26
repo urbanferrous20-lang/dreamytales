@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyPassword, createSession, setSessionCookie } from "@/lib/auth";
-import { activatePendingSignupByEmail } from "@/lib/signup-activate";
+import {
+  verifyPassword,
+  createSession,
+  isSecureRequest,
+  setSessionCookie,
+} from "@/lib/auth";
+import {
+  activatePendingSignupByEmail,
+  findLatestPendingSignup,
+} from "@/lib/signup-activate";
 import { prisma } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
@@ -16,16 +24,12 @@ export async function POST(request: NextRequest) {
     let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
     if (!user) {
-      const pending = await prisma.pendingSignup.findFirst({
-        where: {
-          email: normalizedEmail,
-          expiresAt: { gt: new Date() },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+      const pending = await findLatestPendingSignup(normalizedEmail);
 
       if (pending && (await verifyPassword(password, pending.passwordHash))) {
-        user = await activatePendingSignupByEmail(normalizedEmail);
+        user = await activatePendingSignupByEmail(normalizedEmail, undefined, {
+          allowExpired: true,
+        });
       }
     }
 
@@ -35,13 +39,7 @@ export async function POST(request: NextRequest) {
 
     let valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
-      const pending = await prisma.pendingSignup.findFirst({
-        where: {
-          email: normalizedEmail,
-          expiresAt: { gt: new Date() },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+      const pending = await findLatestPendingSignup(normalizedEmail);
 
       if (pending && (await verifyPassword(password, pending.passwordHash))) {
         await prisma.$transaction([
@@ -64,7 +62,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       name: user.name,
     });
-    await setSessionCookie(token);
+    await setSessionCookie(token, { secure: isSecureRequest(request) });
 
     return NextResponse.json({ success: true });
   } catch {

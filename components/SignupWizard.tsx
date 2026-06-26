@@ -81,6 +81,9 @@ export function SignupWizard() {
     };
 
     try {
+      sessionStorage.setItem("dreamytales_signup_email", parent.email.trim().toLowerCase());
+      sessionStorage.setItem("dreamytales_signup_password", parent.password);
+
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

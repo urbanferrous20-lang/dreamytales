@@ -267,7 +267,7 @@ export function buildSubscriptionFormData(params: PayfastCheckoutParams): Record
   const data: Record<string, string> = {
     merchant_id: merchantId,
     merchant_key: merchantKey,
-    return_url: `${appUrl}/signup/success?ref=${encodeURIComponent(params.mPaymentId)}`,
+    return_url: `${appUrl}/signup/success?ref=${encodeURIComponent(params.mPaymentId)}&email=${encodeURIComponent(params.emailAddress)}`,
     cancel_url: `${appUrl}/signup?cancelled=1`,
     notify_url: `${appUrl}/api/webhooks/payfast/itn`,
     name_first: params.nameFirst,
