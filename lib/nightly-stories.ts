@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { sendStoryEmail, sendAdminAlert } from "@/lib/email";
 import { buildStoryPdf } from "@/lib/pdf-builder";
 import { getAppUrl } from "@/lib/payfast";
+import { getAgeBand, parseBirthDate } from "@/lib/child-age";
 import {
   generateCharacterBible,
   generateNightlyStory,
@@ -10,6 +11,7 @@ import {
   parseChildFromDb,
   type CharacterBible,
 } from "@/lib/story-generator";
+import type { ChildProfileInput } from "@/lib/types/child";
 
 export function getStoryDateSast(): Date {
   const now = new Date();
@@ -38,6 +40,52 @@ async function fetchActiveChildren() {
   });
 }
 
+/** Sync age from birthDate and refresh character bible when the age band changes. */
+async function prepareChildForStory(child: ActiveChild): Promise<{
+  childInput: ChildProfileInput;
+  characterBible: CharacterBible | null;
+}> {
+  const childInput = parseChildFromDb(child);
+  const previousBand = getAgeBand(child.age);
+  const newBand = getAgeBand(childInput.age);
+
+  const data: {
+    age?: number;
+    birthDate?: Date;
+    characterBible?: string | null;
+  } = {};
+
+  if (childInput.age !== child.age) {
+    data.age = childInput.age;
+  }
+
+  if (!child.birthDate && childInput.birthDate) {
+    const parsed = parseBirthDate(childInput.birthDate);
+    if (parsed) data.birthDate = parsed;
+  }
+
+  if (previousBand !== newBand) {
+    data.characterBible = null;
+  }
+
+  if (Object.keys(data).length > 0) {
+    await prisma.childProfile.update({
+      where: { id: child.id },
+      data,
+    });
+    if (data.characterBible === null) {
+      child.characterBible = null;
+    }
+  }
+
+  let characterBible: CharacterBible | null = null;
+  if (child.characterBible && data.characterBible !== null) {
+    characterBible = JSON.parse(child.characterBible) as CharacterBible;
+  }
+
+  return { childInput, characterBible };
+}
+
 export async function countPendingNightlyStories(storyDate = getStoryDateSast()): Promise<number> {
   const children = await fetchActiveChildren();
   let pending = 0;
@@ -55,19 +103,17 @@ export async function countPendingNightlyStories(storyDate = getStoryDateSast())
 export async function processNightlyStoryForChild(
   child: ActiveChild,
   storyDate = getStoryDateSast()
-): Promise<{ skipped?: boolean; success?: boolean; title?: string; error?: string }> {
+): Promise<{ skipped?: boolean; success?: boolean; title?: string; setting?: string; error?: string }> {
   const existing = await prisma.story.findUnique({
     where: { childId_storyDate: { childId: child.id, storyDate } },
   });
   if (existing?.sentAt) return { skipped: true };
 
   try {
-    const childInput = parseChildFromDb(child);
-    let characterBible: CharacterBible;
+    const { childInput, characterBible: existingBible } = await prepareChildForStory(child);
+    let characterBible = existingBible;
 
-    if (child.characterBible) {
-      characterBible = JSON.parse(child.characterBible) as CharacterBible;
-    } else {
+    if (!characterBible) {
       characterBible = await generateCharacterBible(childInput);
       await prisma.childProfile.update({
         where: { id: child.id },
@@ -77,19 +123,24 @@ export async function processNightlyStoryForChild(
 
     const storyNumber = child.stories.length + 1;
     const recentSummaries = child.stories.map((s) => s.summary);
+    const recentSettingKeys = child.stories
+      .map((s) => s.settingKey)
+      .filter((key): key is string => Boolean(key));
 
-    const story = await generateNightlyStory({
+    const { story, setting } = await generateNightlyStory({
       child: childInput,
       characterBible,
       storyNumber,
       recentSummaries,
+      recentSettingKeys,
     });
 
     const imagePaths = await generatePageIllustrations(
       child.id,
       childInput,
       characterBible,
-      story.pages
+      story.pages,
+      setting
     );
 
     const pdfPath = await buildStoryPdf({
@@ -109,10 +160,16 @@ export async function processNightlyStoryForChild(
         childId: child.id,
         title: story.title,
         summary: story.summary,
+        settingKey: setting.key,
         pdfPath,
         storyDate,
       },
-      update: { title: story.title, summary: story.summary, pdfPath },
+      update: {
+        title: story.title,
+        summary: story.summary,
+        settingKey: setting.key,
+        pdfPath,
+      },
     });
 
     await sendStoryEmail({
@@ -130,7 +187,7 @@ export async function processNightlyStoryForChild(
       data: { sentAt: new Date() },
     });
 
-    return { success: true, title: story.title };
+    return { success: true, title: story.title, setting: setting.label };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await sendAdminAlert(

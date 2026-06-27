@@ -166,39 +166,48 @@ Enable **SSL** (Let’s Encrypt) in Plesk before testing PayFast webhooks.
 
 ## Step 6 — Plesk scheduled tasks (cron)
 
-Nightly stories run **one child per cron hit** to avoid timeouts on shared hosting.
+Create **three separate tasks** in Plesk → **Scheduled Tasks**. The app does not run these automatically — Plesk must call the URLs.
 
-### Nightly stories (6pm SAST = 16:00 UTC)
+Use task type **Fetch a URL** and paste the URL (replace `YOUR_CRON_SECRET` with the value from `httpdocs/.env`).
+
+Nightly stories run **one child per hit** to avoid overloading shared hosting.
+
+### Nightly stories (deliver by ~6pm SAST)
 
 Plesk → **Scheduled Tasks** → Add task:
 
-- **Schedule:** every 5 minutes from 16:00–20:00 UTC  
-  Cron: `*/5 16-20 * * *`
-- **Command:**
+| Field | Value |
+|--------|--------|
+| **Task type** | **Fetch a URL** |
+| **URL** | `https://dreamytales.co.za/api/cron/nightly-stories?secret=YOUR_CRON_SECRET` |
+| **Schedule (Africa/Johannesburg)** | Every 5 min, 17:00–22:00 — cron: `*/5 17-22 * * *` |
+| **Schedule (UTC)** | Every 5 min, 15:00–20:00 — cron: `*/5 15-20 * * *` |
+
+Start **before 18:00 SAST** so generation finishes and the email lands by 6pm. Each run generates and emails **one** child’s story.
+
+**504 timeout on nightly stories?** Plesk often stops waiting after ~60s while the story is still generating. The email may still send. If stories are missing, switch this task to **Run a command**:
 
 ```bash
-curl -fsS "https://dreamytales.co.za/api/cron/nightly-stories?secret=YOUR_CRON_SECRET"
+curl -fsS "https://dreamytales.co.za/api/cron/nightly-stories?secret=YOUR_CRON_SECRET" >> /dev/null 2>&1 &
 ```
-
-Each run generates and emails **one** child’s story. With 3 children, schedule ~3 successful runs in the evening window.
 
 ### Process cancellations (hourly)
 
-```bash
-curl -fsS "https://dreamytales.co.za/api/cron/process-cancellations?secret=YOUR_CRON_SECRET"
-```
-
-Cron: `0 * * * *`
+| Field | Value |
+|--------|--------|
+| **Task type** | **Fetch a URL** |
+| **URL** | `https://dreamytales.co.za/api/cron/process-cancellations?secret=YOUR_CRON_SECRET` |
+| **Schedule** | Every hour — cron: `0 * * * *` |
 
 ### Delete old PDFs (daily, 90-day retention)
 
-Story PDFs on the server are removed after **90 days** (parents keep copies in email). Run once per day:
+Story PDFs on the server are removed after **90 days** (parents keep copies in email).
 
-```bash
-curl -fsS "https://dreamytales.co.za/api/cron/cleanup-pdfs?secret=YOUR_CRON_SECRET"
-```
-
-Cron: `15 3 * * *` (3:15 AM UTC daily)
+| Field | Value |
+|--------|--------|
+| **Task type** | **Fetch a URL** |
+| **URL** | `https://dreamytales.co.za/api/cron/cleanup-pdfs?secret=YOUR_CRON_SECRET` |
+| **Schedule** | Once daily — cron: `15 3 * * *` (3:15 AM in your Plesk timezone) |
 
 Optional env vars: `PDF_RETENTION_DAYS=90`, `STORAGE_QUOTA_GB=25` (for admin dashboard estimates).
 
@@ -212,9 +221,9 @@ Open `https://dreamytales.co.za`
 
 ### 2. SMTP test
 
-```bash
-curl "https://dreamytales.co.za/api/cron/test-email?secret=YOUR_CRON_SECRET&to=Admin@dreamytales.co.za"
-```
+Open in a browser or use **Fetch a URL** once:
+
+`https://dreamytales.co.za/api/cron/test-email?secret=YOUR_CRON_SECRET&to=Admin@dreamytales.co.za`
 
 You should receive “Dreamy Tales SMTP test” in the mailbox.
 
@@ -224,11 +233,9 @@ Sign up (PayFast sandbox) and confirm a user appears after payment ITN.
 
 ### 4. Manual story run (no active subscribers yet)
 
-With at least one active trial subscription in the DB, trigger one story:
+With at least one active trial subscription in the DB, open once in a browser:
 
-```bash
-curl "https://dreamytales.co.za/api/cron/nightly-stories?secret=YOUR_CRON_SECRET"
-```
+`https://dreamytales.co.za/api/cron/nightly-stories?secret=YOUR_CRON_SECRET`
 
 Check response JSON and parent email with PDF attachment.
 
@@ -245,7 +252,8 @@ Check response JSON and parent email with PDF attachment.
 | SMTP auth failed | Full email as username, port 465 + `SMTP_SECURE=true` |
 | PayFast ITN fails | HTTPS live, `NEXT_PUBLIC_APP_URL` correct |
 | Cron does nothing | `CRON_SECRET` matches URL; check Scheduled Tasks log |
-| Story timeout | Normal on first child — cron processes **one child per run** |
+| Story 504 / timeout in Plesk log | Normal with **Fetch a URL** — story may still send. Use background `curl ... &` if emails are missing |
+| Story not sent | Cron processes **one child per run**; check schedule starts before 18:00 SAST |
 | `nodenv: node: command not found` (npm error 127) | Enable Node.js in Plesk, pick version **22**, use **NPM install** button — not SSH. Delete `node_modules` first if partial install. See below. |
 
 Contact 1-grid support if Node.js extension is missing or Node version is below 20.

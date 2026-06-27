@@ -10,7 +10,9 @@ import {
   type SignupInput,
   isChildLocationComplete,
   getResolvedCity,
+  defaultBirthDateForAge,
 } from "@/lib/types/child";
+import { ageFromBirthDate, birthDateInputBounds, parseBirthDate } from "@/lib/child-age";
 import { SA_PROVINCES, CITIES_BY_PROVINCE, type SAProvince } from "@/lib/sa-locations";
 import { SA_LANGUAGES, getLanguageLabel } from "@/lib/sa-languages";
 import {
@@ -25,6 +27,7 @@ import {
 
 const EMPTY_CHILD: ChildProfileInput = {
   name: "",
+  birthDate: defaultBirthDateForAge(5),
   age: 5,
   pronouns: "they/them",
   interests: [],
@@ -360,23 +363,30 @@ function ChildForm({
   onChange: (updates: Partial<ChildProfileInput>) => void;
   onToggleInterest: (interest: string) => void;
 }) {
+  const dobBounds = birthDateInputBounds();
   return (
     <div className="space-y-5">
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Child's first name" value={child.name} onChange={(v) => onChange({ name: v })} />
         <div>
-          <label className="block text-sm font-medium text-navy mb-1">Age</label>
-          <select
-            value={child.age}
-            onChange={(e) => onChange({ age: Number(e.target.value) })}
+          <label className="block text-sm font-medium text-navy mb-1">Date of birth</label>
+          <input
+            type="date"
+            value={child.birthDate}
+            min={dobBounds.min}
+            max={dobBounds.max}
+            onChange={(e) => {
+              const birthDate = e.target.value;
+              const parsed = parseBirthDate(birthDate);
+              const age = parsed ? ageFromBirthDate(parsed) : child.age;
+              onChange({ birthDate, age });
+            }}
             className="w-full border border-navy/20 rounded-xl px-4 py-3 text-navy"
-          >
-            {Array.from({ length: 10 }, (_, i) => i + 3).map((age) => (
-              <option key={age} value={age}>
-                {age} years old
-              </option>
-            ))}
-          </select>
+            required
+          />
+          <p className="text-xs text-navy/50 mt-1">
+            Ages 3–12. We update story difficulty automatically as they grow.
+          </p>
         </div>
       </div>
 
@@ -437,7 +447,8 @@ function ChildForm({
       <div className="border-t border-navy/10 pt-5">
         <h3 className="font-medium text-navy mb-1">Where in South Africa?</h3>
         <p className="text-sm text-navy/60 mb-4">
-          Stories are set in your child&apos;s hometown — local skies, seasons, and places they&apos;ll recognise.
+          Their hometown anchors each story — with new adventures in forests, coasts, mountains, and
+          magical places too.
         </p>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>

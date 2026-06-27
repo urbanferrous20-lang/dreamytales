@@ -11,6 +11,13 @@ import {
 import { formatSaLocation } from "@/lib/sa-locations";
 import { buildStorySystemPrompt, type SALanguageId } from "@/lib/sa-languages";
 import { formatTopicsToAvoid, getIllustrationContentPolicy, getStoryFantasyPolicy } from "@/lib/story-content-policy";
+import { formatStorySettingPrompt, pickStorySetting, type StorySetting } from "@/lib/story-settings";
+import {
+  birthDateFromRecord,
+  estimateBirthDateFromAge,
+  formatBirthDateIso,
+  getEffectiveAge,
+} from "@/lib/child-age";
 
 export type CharacterBible = {
   protagonist: string;
@@ -43,7 +50,7 @@ export async function generateCharacterBible(child: ChildProfileInput): Promise<
       content: `Create a compact character bible JSON for bedtime short stories.
 Fields: protagonist, appearance, personality, world, recurringElements (array), illustrationStyle.
 Keep each field under 40 words. Describe the child respectfully and inclusively — no stereotypes.
-The "world" and "recurringElements" must blend their South African home with gentle fantasy (magical friends, enchanted places, whimsical objects tied to their interests).
+The "world" blends their South African home with gentle fantasy — include both familiar local places AND magical adventure settings (forests, coast, mountains) they may visit on different nights.
 
 Child profile:
 ${childProfileToPromptContext(child)}${avoidLine ? `\n${avoidLine}` : ""}`,
@@ -56,39 +63,55 @@ export async function generateNightlyStory(params: {
   characterBible: CharacterBible;
   storyNumber: number;
   recentSummaries: string[];
-}): Promise<GeneratedStory> {
+  recentSettingKeys: string[];
+  setting?: StorySetting;
+}): Promise<{ story: GeneratedStory; setting: StorySetting }> {
+  const setting =
+    params.setting ??
+    pickStorySetting({
+      child: params.child,
+      storyNumber: params.storyNumber,
+      recentSettingKeys: params.recentSettingKeys,
+    });
+
   const budget = getWordBudget(params.child.age);
   const systemPrompt = buildStorySystemPrompt(params.child.language as SALanguageId, params.child.age);
   const avoidLine = formatTopicsToAvoid(params.child.topicsToAvoid);
+  const settingPrompt = formatStorySettingPrompt(setting, params.child);
 
-  return deepseekJson<GeneratedStory>([
+  const story = await deepseekJson<GeneratedStory>([
     { role: "system", content: systemPrompt },
     {
       role: "user",
-      content: `Write story #${params.storyNumber} as JSON with fields: title, teaser (2 sentences for email), summary (1 line for dedup), pages (array of 10 items with pageNumber, text, sceneDescription, mood).
+      content: `Write story #${params.storyNumber} as JSON with fields: title, teaser (2 sentences for email), summary (1 line for dedup — mention the setting type), pages (array of 10 items with pageNumber, text, sceneDescription, mood).
 
 Word budget: ${budget.min}-${budget.max} total words (child is ${params.child.age} years old).
 Character bible: ${JSON.stringify(params.characterBible)}
 Child: ${childProfileToPromptContext(params.child)}
+${settingPrompt}
 Recent stories to avoid repeating: ${params.recentSummaries.join("; ") || "none yet"}
 ${avoidLine ? `${avoidLine}\n` : ""}
 ${getStoryFantasyPolicy(params.child.age)}
-Story arc: hook with a spark of magic, want, gentle problem, two attempts with fantasy helpers or enchanted twists, small wonder-filled climax, calm resolution, sleepy close.
+Story arc: hook with a spark of magic, want, gentle problem, two attempts with fantasy helpers or enchanted twists, small wonder-filled climax, calm resolution, sleepy close at home.
 Each page's sceneDescription should show the fantasy element visually for illustration.
 Re-check every page against the content, safety, and fantasy rules before responding.`,
     },
   ]);
+
+  return { story, setting };
 }
 
 export async function generatePageIllustrations(
   childId: string,
   child: ChildProfileInput,
   characterBible: CharacterBible,
-  pages: GeneratedStory["pages"]
+  pages: GeneratedStory["pages"],
+  setting: StorySetting
 ): Promise<Map<number, string>> {
   const imagePaths = new Map<number, string>();
   const childDescription = `${child.name}, age ${child.age}, ${characterBible.appearance}`;
-  const locationHint = formatSaLocation(child.province, getResolvedCity(child), child.suburb);
+  const homeHint = formatSaLocation(child.province, getResolvedCity(child), child.suburb);
+  const locationHint = `${setting.label}: ${setting.prompt.slice(0, 120)}. Home: ${homeHint}`;
 
   for (const page of pages) {
     const prompt = buildIllustrationPrompt({
@@ -109,6 +132,8 @@ export async function generatePageIllustrations(
 export function parseChildFromDb(record: {
   name: string;
   age: number;
+  birthDate?: Date | null;
+  createdAt?: Date;
   pronouns: string;
   interests: string;
   favoriteColors: string;
@@ -127,9 +152,23 @@ export function parseChildFromDb(record: {
   readAloudBy: string;
   language: string;
 }): ChildProfileInput {
+  const birthDateIso =
+    birthDateFromRecord({
+      birthDate: record.birthDate,
+      age: record.age,
+      createdAt: record.createdAt,
+    }) ?? formatBirthDateIso(estimateBirthDateFromAge(record.age, record.createdAt ?? new Date()));
+
+  const effectiveAge = getEffectiveAge({
+    birthDate: birthDateIso,
+    storedAge: record.age,
+    profileCreatedAt: record.createdAt,
+  });
+
   return {
     name: record.name,
-    age: record.age,
+    birthDate: birthDateIso,
+    age: effectiveAge,
     pronouns: record.pronouns as ChildProfileInput["pronouns"],
     interests: JSON.parse(record.interests) as string[],
     favoriteColors: record.favoriteColors,

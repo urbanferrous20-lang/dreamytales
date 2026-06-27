@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { recurringCharge, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
 import { childProfileSchema, type ChildProfileInput } from "@/lib/types/child";
 import type { User } from "@prisma/client";
+import { parseBirthDate, estimateBirthDateFromAge, getEffectiveAge } from "@/lib/child-age";
 
 function parseStoredChildren(childrenJson: string): ChildProfileInput[] | null {
   const trimmed = childrenJson.trim();
@@ -36,9 +37,28 @@ function parseStoredChildren(childrenJson: string): ChildProfileInput[] | null {
 
     return raw.map((entry) => {
       const child = entry as Record<string, unknown>;
+      const legacyAge = Number(child.age ?? 5);
+      const birthDateStr =
+        typeof child.birthDate === "string" && child.birthDate.trim()
+          ? child.birthDate.trim()
+          : undefined;
+      const birthDate =
+        birthDateStr && parseBirthDate(birthDateStr)
+          ? birthDateStr
+          : undefined;
+      const age = birthDate
+        ? getEffectiveAge({ birthDate, storedAge: legacyAge })
+        : legacyAge;
+
       return {
         name: String(child.name ?? "Child"),
-        age: Number(child.age ?? 5),
+        birthDate:
+          birthDate ??
+          (() => {
+            const est = estimateBirthDateFromAge(legacyAge);
+            return `${est.getUTCFullYear()}-${String(est.getUTCMonth() + 1).padStart(2, "0")}-${String(est.getUTCDate()).padStart(2, "0")}`;
+          })(),
+        age,
         pronouns: (child.pronouns as ChildProfileInput["pronouns"]) ?? "they/them",
         interests: Array.isArray(child.interests)
           ? child.interests.map(String)
@@ -72,11 +92,13 @@ function parseStoredChildren(childrenJson: string): ChildProfileInput[] | null {
 
 async function createChildProfiles(userId: string, children: ChildProfileInput[]): Promise<void> {
   for (const child of children) {
+    const parsedBirth = parseBirthDate(child.birthDate);
     await prisma.childProfile.create({
       data: {
         userId,
         name: child.name,
         age: child.age,
+        birthDate: parsedBirth ?? estimateBirthDateFromAge(child.age),
         pronouns: child.pronouns,
         interests: JSON.stringify(child.interests),
         favoriteColors: child.favoriteColors,

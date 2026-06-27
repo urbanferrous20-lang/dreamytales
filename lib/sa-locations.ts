@@ -59,9 +59,19 @@ export function formatSaLocation(province: string, cityOrTown: string, suburb?: 
   return parts.join(", ");
 }
 
-export function getLocationStoryGuidance(province: string, cityOrTown: string): string {
+export function getHomeBaseGuidance(province: string, cityOrTown: string): string {
   const hint =
     PROVINCE_STORY_HINTS[province as SAProvince] ??
     "South African landscapes, local seasons, and familiar everyday life";
-  return `Set stories in and around ${cityOrTown}, ${province}, South Africa. Weave in authentic local details: ${hint}. Use South African English; mention familiar seasonal weather where natural.`;
+  return (
+    `Home base: ${cityOrTown}, ${province}, South Africa. ` +
+    `The child lives here — reference local flavour (${hint}) where natural. ` +
+    `Not every story stays at home; many adventures visit forests, coasts, mountains, or magical places, ` +
+    `but should return home (or to bed) for the sleepy ending on page 10.`
+  );
+}
+
+/** @deprecated Use getHomeBaseGuidance */
+export function getLocationStoryGuidance(province: string, cityOrTown: string): string {
+  return getHomeBaseGuidance(province, cityOrTown);
 }

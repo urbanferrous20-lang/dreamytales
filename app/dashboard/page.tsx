@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getLanguageLabel } from "@/lib/sa-languages";
+import { getEffectiveAge } from "@/lib/child-age";
 import { isPdfStored } from "@/lib/storage-config";
 import {
   billingCadenceLabel,
@@ -122,21 +123,28 @@ export default async function DashboardPage() {
 
       <h2 className="font-display text-xl text-navy mb-4">Your children</h2>
       <div className="space-y-6">
-        {user.children.map((child) => (
+        {user.children.map((child) => {
+          const displayAge = getEffectiveAge({
+            birthDate: child.birthDate,
+            storedAge: child.age,
+            profileCreatedAt: child.createdAt,
+          });
+          return (
           <div key={child.id} className="bg-white rounded-2xl p-6 shadow-sm border border-navy/5">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-medium text-lg text-navy">{child.name}</h3>
-              <span className="text-sm text-navy/50">Age {child.age}</span>
+              <span className="text-sm text-navy/50">Age {displayAge}</span>
             </div>
             <p className="text-sm text-navy/60 mb-4">
               Loves: {JSON.parse(child.interests).join(", ")}
             </p>
             <p className="text-sm text-navy/60 mb-4">
-              Stories set in:{" "}
+              Home base:{" "}
               {child.customCity && child.cityOrTown === "Other"
                 ? `${child.customCity}, ${child.province}`
                 : `${child.cityOrTown}, ${child.province}`}
               {child.suburb ? ` (${child.suburb})` : ""}
+              <span className="text-navy/40"> · adventures vary each night</span>
             </p>
             <p className="text-sm text-navy/60 mb-4">
               Story language: {getLanguageLabel(child.language)}
@@ -177,7 +185,8 @@ export default async function DashboardPage() {
               <p className="text-sm text-navy/50 italic">First story coming tonight at 6pm!</p>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

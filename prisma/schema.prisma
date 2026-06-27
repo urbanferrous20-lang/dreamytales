@@ -53,6 +53,7 @@ model ChildProfile {
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name           String
   age            Int
+  birthDate      DateTime? @db.Date
   pronouns       String
   interests      String   @db.Text
   favoriteColors String
@@ -100,6 +101,7 @@ model Story {
   child     ChildProfile @relation(fields: [childId], references: [id], onDelete: Cascade)
   title     String
   summary   String   @db.Text
+  settingKey String?
   pdfPath   String
   storyDate DateTime
   sentAt    DateTime?

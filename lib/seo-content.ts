@@ -45,7 +45,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Are the stories age-appropriate?",
-    a: "Yes. We tailor vocabulary, length, and themes to your child's age (3–12) and your preferences.",
+    a: "Yes. We tailor vocabulary, length, and themes to your child's age (3–12). Age is calculated from their date of birth and updates automatically so stories grow with them.",
   },
   {
     q: "Which languages are available?",

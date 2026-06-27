@@ -30,7 +30,7 @@ export function getStoryFantasyPolicy(age: number): string {
 
   return `FANTASY & WONDER (required in every story):
 - Every story MUST include meaningful fantasy or magical wonder — not realistic slice-of-life only.
-- Root magic in the child's real South African setting (their garden, street, beach, veld, harbour, or home). Do not default to generic faraway kingdoms.
+- The child has a real home in South Africa, but tonight's primary setting (provided separately) may be a forest, coast, mountains, cloud kingdom, magical library, or their neighbourhood — vary locations across nights.
 - Tie enchantment to the child's interests, favourite toys, pets, and character-bible recurring elements.
 - ${intensity}
 - Good elements: friendly magical companions, enchanted everyday objects, whispering wind or star guides, unicorns, small dragons, talking clouds, glowing paths, paper planes that listen, dreams that softly touch the waking world.

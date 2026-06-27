@@ -1,5 +1,13 @@
 import { z } from "zod";
-import { SA_PROVINCES, formatSaLocation, getLocationStoryGuidance } from "@/lib/sa-locations";
+import { SA_PROVINCES, formatSaLocation, getHomeBaseGuidance } from "@/lib/sa-locations";
+import {
+  ageFromBirthDate,
+  clampStoryAge,
+  defaultBirthDateForAge,
+  MAX_STORY_AGE,
+  MIN_STORY_AGE,
+  parseBirthDate,
+} from "@/lib/child-age";
 import { SA_LANGUAGE_IDS, getLanguageLabel, getStoryLanguageInstruction, type SALanguageId } from "@/lib/sa-languages";
 import type { BillingInterval } from "@/lib/pricing";
 
@@ -20,27 +28,57 @@ export const INTEREST_OPTIONS = [
   "fairy tales",
 ] as const;
 
-export const childProfileSchema = z.object({
-  name: z.string().min(1, "Name is required").max(50),
-  age: z.coerce.number().min(3).max(12),
-  pronouns: z.enum(["he/him", "she/her", "they/them"]),
-  interests: z.array(z.string()).min(1, "Pick at least one interest"),
-  favoriteColors: z.string().min(1, "Pick a favourite colour"),
-  favoriteToy: z.string().optional(),
-  petInfo: z.string().optional(),
-  siblingNames: z.string().optional(),
-  bestFriend: z.string().optional(),
-  favoritePlace: z.string().optional(),
-  province: z.enum(SA_PROVINCES, { message: "Select your province" }),
-  cityOrTown: z.string().min(1, "City or town is required").max(80),
-  customCity: z.string().max(80).optional(),
-  suburb: z.string().max(80).optional(),
-  topicsToAvoid: z.string().optional(),
-  storyMood: z.enum(["gentle", "adventurous", "funny", "educational"]).default("gentle"),
-  moralTheme: z.string().optional(),
-  readAloudBy: z.enum(["parent", "child", "both"]).default("parent"),
-  language: z.enum(SA_LANGUAGE_IDS, { message: "Choose a story language" }),
-});
+const birthDateField = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date of birth (YYYY-MM-DD)");
+
+export const childProfileSchema = z
+  .object({
+    name: z.string().min(1, "Name is required").max(50),
+    birthDate: birthDateField,
+    pronouns: z.enum(["he/him", "she/her", "they/them"]),
+    interests: z.array(z.string()).min(1, "Pick at least one interest"),
+    favoriteColors: z.string().min(1, "Pick a favourite colour"),
+    favoriteToy: z.string().optional(),
+    petInfo: z.string().optional(),
+    siblingNames: z.string().optional(),
+    bestFriend: z.string().optional(),
+    favoritePlace: z.string().optional(),
+    province: z.enum(SA_PROVINCES, { message: "Select your province" }),
+    cityOrTown: z.string().min(1, "City or town is required").max(80),
+    customCity: z.string().max(80).optional(),
+    suburb: z.string().max(80).optional(),
+    topicsToAvoid: z.string().optional(),
+    storyMood: z.enum(["gentle", "adventurous", "funny", "educational"]).default("gentle"),
+    moralTheme: z.string().optional(),
+    readAloudBy: z.enum(["parent", "child", "both"]).default("parent"),
+    language: z.enum(SA_LANGUAGE_IDS, { message: "Choose a story language" }),
+    /** Legacy signups may still send age; ignored when birthDate is present. */
+    age: z.coerce.number().min(MIN_STORY_AGE).max(MAX_STORY_AGE).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const parsed = parseBirthDate(data.birthDate);
+    if (!parsed) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["birthDate"],
+        message: "Enter a valid date of birth",
+      });
+      return;
+    }
+    const age = ageFromBirthDate(parsed);
+    if (age < MIN_STORY_AGE || age > MAX_STORY_AGE) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["birthDate"],
+        message: `Stories are for children aged ${MIN_STORY_AGE}–${MAX_STORY_AGE}`,
+      });
+    }
+  })
+  .transform((data) => ({
+    ...data,
+    age: clampStoryAge(ageFromBirthDate(parseBirthDate(data.birthDate)!)),
+  }));
 
 export type ChildProfileInput = z.infer<typeof childProfileSchema>;
 
@@ -72,10 +110,10 @@ export function childProfileToPromptContext(child: ChildProfileInput): string {
 
   return [
     `Name: ${child.name}`,
-    `Age: ${child.age}`,
+    `Age: ${child.age} (updates automatically from date of birth)`,
     `Pronouns: ${child.pronouns}`,
     `Location: ${formatSaLocation(child.province, city, child.suburb)}`,
-    getLocationStoryGuidance(child.province, city),
+    getHomeBaseGuidance(child.province, city),
     `Interests: ${child.interests.join(", ")}`,
     `Favourite colours: ${child.favoriteColors}`,
     child.favoriteToy ? `Favourite toy: ${child.favoriteToy}` : null,
@@ -104,3 +142,5 @@ export function isChildLocationComplete(child: ChildProfileInput): boolean {
   if (child.cityOrTown === "Other" && !child.customCity?.trim()) return false;
   return true;
 }
+
+export { defaultBirthDateForAge };
