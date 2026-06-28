@@ -185,6 +185,10 @@ Plesk → **Scheduled Tasks** → Add task:
 
 Start **before 18:00 SAST** so generation finishes and the email lands by 6pm. Each run generates and emails **one** child’s story.
 
+**In-app delivery window:** Story emails are **not sent before 16:00 SAST (4pm)** even if cron runs earlier. Default: `STORY_DELIVERY_START_HOUR_SAST=16` in `.env`. Optional: `STORY_DELIVERY_END_HOUR_SAST=22`. Cron hits before 4pm return `outsideDeliveryWindow: true` with no email.
+
+Recommended Plesk schedule (aligned with 4pm gate): `*/5 16-22 * * *` (Africa/Johannesburg).
+
 **504 timeout on nightly stories?** Plesk often stops waiting after ~60s while the story is still generating. The email may still send. If stories are missing, switch this task to **Run a command**:
 
 ```bash

@@ -12,6 +12,10 @@ import {
   type CharacterBible,
 } from "@/lib/story-generator";
 import type { ChildProfileInput } from "@/lib/types/child";
+import {
+  getStoryDeliveryWindowBlockReason,
+  isWithinStoryDeliveryWindow,
+} from "@/lib/story-delivery-window";
 
 export function getStoryDateSast(): Date {
   const now = new Date();
@@ -200,6 +204,18 @@ export async function processNightlyStoryForChild(
 
 /** Process the next child who has not received tonight's story. One child per call avoids Plesk timeouts. */
 export async function processNextNightlyStory(storyDate = getStoryDateSast()) {
+  if (!isWithinStoryDeliveryWindow()) {
+    const window = getStoryDeliveryWindowBlockReason();
+    const pending = await countPendingNightlyStories(storyDate);
+    return {
+      outsideDeliveryWindow: true,
+      pending,
+      nowSast: window.nowSast,
+      deliveryWindow: window.deliveryWindow,
+      message: window.message,
+    };
+  }
+
   const children = await fetchActiveChildren();
 
   for (const child of children) {

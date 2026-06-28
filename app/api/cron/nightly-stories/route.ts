@@ -10,6 +10,10 @@ export async function GET(request: NextRequest) {
 
   const result = await processNextNightlyStory();
 
+  if ("outsideDeliveryWindow" in result && result.outsideDeliveryWindow) {
+    return NextResponse.json(result);
+  }
+
   if ("done" in result && result.done) {
     return NextResponse.json({
       message: "All nightly stories already sent for today",
