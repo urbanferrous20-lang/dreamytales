@@ -1,6 +1,13 @@
 import "server-only";
 import { deepseekJson } from "@/lib/ai/deepseek";
-import { buildIllustrationPrompt, generateIllustration } from "@/lib/ai/openai";
+import {
+  generateIllustrationFromReference,
+  ensureCharacterAnchor,
+} from "@/lib/ai/openai";
+import {
+  buildSceneIllustrationPrompt,
+  formatIllustrationCharacterBlock,
+} from "@/lib/illustration-character";
 import { saveImage } from "@/lib/pdf-builder";
 import {
   childProfileToPromptContext,
@@ -58,6 +65,8 @@ export async function generateCharacterBible(child: ChildProfileInput): Promise<
       content: `Create a compact character bible JSON for bedtime short stories.
 Fields: protagonist, appearance, personality, world, recurringElements (array), illustrationStyle.
 Keep each field under 40 words. Describe the child respectfully and inclusively — no stereotypes.
+For "appearance": write a STABLE visual design for illustrators — specific hair (colour, length, style), skin tone, face shape, eye colour, and default bedtime outfit using their favourite colours where natural. This exact look must stay the same on every illustrated page.
+For "illustrationStyle": one line of art direction (e.g. soft flat digital art, muted blues and golds, bedtime calm).
 The "world" blends their South African home with gentle fantasy — include both familiar local places AND magical adventure settings (forests, coast, mountains) they may visit on different nights.
 
 Child profile:
@@ -174,27 +183,39 @@ export async function generatePageIllustrations(
   child: ChildProfileInput,
   characterBible: CharacterBible,
   pages: GeneratedStory["pages"],
-  setting: StorySetting
-): Promise<Map<number, string>> {
+  setting: StorySetting,
+  styleAnchorPath?: string | null
+): Promise<{ imagePaths: Map<number, string>; styleAnchorPath?: string }> {
   const imagePaths = new Map<number, string>();
-  const childDescription = `${child.name}, age ${child.age}, ${characterBible.appearance}`;
+  const anchor = await ensureCharacterAnchor({
+    childId,
+    child,
+    characterBible,
+    existingAnchorPath: styleAnchorPath,
+  });
+  const characterBlock = formatIllustrationCharacterBlock(child, characterBible);
   const homeHint = formatSaLocation(child.province, getResolvedCity(child), child.suburb);
   const locationHint = `${setting.label}: ${setting.prompt.slice(0, 120)}. Home: ${homeHint}`;
 
   for (const page of pages) {
-    const prompt = buildIllustrationPrompt({
+    const prompt = buildSceneIllustrationPrompt({
+      childName: child.name,
       description: page.sceneDescription,
       mood: page.mood,
-      childDescription,
+      characterBlock,
+      illustrationStyle: characterBible.illustrationStyle,
       locationHint,
     });
 
-    const buffer = await generateIllustration(prompt);
+    const buffer = await generateIllustrationFromReference(prompt, anchor.buffer);
     const imagePath = await saveImage(childId, `page-${page.pageNumber}.jpg`, buffer);
     imagePaths.set(page.pageNumber, imagePath);
   }
 
-  return imagePaths;
+  return {
+    imagePaths,
+    ...(anchor.created || !styleAnchorPath ? { styleAnchorPath: anchor.path } : {}),
+  };
 }
 
 export function parseChildFromDb(record: {

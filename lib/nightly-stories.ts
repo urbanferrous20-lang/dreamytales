@@ -60,6 +60,7 @@ async function prepareChildForStory(child: ActiveChild): Promise<{
     birthDate?: Date;
     language?: string;
     characterBible?: string | null;
+    styleAnchorUrl?: string | null;
   } = {};
 
   if (childInput.age !== child.age) {
@@ -79,6 +80,7 @@ async function prepareChildForStory(child: ActiveChild): Promise<{
 
   if (previousBand !== newBand) {
     data.characterBible = null;
+    data.styleAnchorUrl = null;
   }
 
   if (Object.keys(data).length > 0) {
@@ -88,6 +90,7 @@ async function prepareChildForStory(child: ActiveChild): Promise<{
     });
     if (data.characterBible === null) {
       child.characterBible = null;
+      child.styleAnchorUrl = null;
     }
   }
 
@@ -186,13 +189,21 @@ export async function processNightlyStoryForChild(
       archetypeLabel = nightlyResult.archetype.label;
     }
 
-    const imagePaths = await generatePageIllustrations(
+    const illustrationResult = await generatePageIllustrations(
       child.id,
       childForStory,
       characterBible,
       story.pages,
-      setting
+      setting,
+      child.styleAnchorUrl
     );
+
+    if (illustrationResult.styleAnchorPath) {
+      await prisma.childProfile.update({
+        where: { id: child.id },
+        data: { styleAnchorUrl: illustrationResult.styleAnchorPath },
+      });
+    }
 
     const pdfPath = await buildStoryPdf({
       childId: child.id,
@@ -201,7 +212,7 @@ export async function processNightlyStoryForChild(
       pages: story.pages.map((p) => ({
         pageNumber: p.pageNumber,
         text: p.text,
-        imagePath: imagePaths.get(p.pageNumber),
+        imagePath: illustrationResult.imagePaths.get(p.pageNumber),
       })),
     });
 
