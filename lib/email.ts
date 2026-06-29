@@ -17,15 +17,31 @@ export async function sendStoryEmail(params: {
   teaser: string;
   pdfPath: string;
   manageUrl: string;
+  isBirthday?: boolean;
+  turningAge?: number;
 }): Promise<void> {
+  const birthday = params.isBirthday === true;
+  const subject = birthday
+    ? `Happy birthday, ${params.childName}! Tonight's special story: ${params.storyTitle}`
+    : `Tonight's story for ${params.childName}: ${params.storyTitle}`;
+  const intro = birthday
+    ? `<p>It's <strong>${params.childName}'s birthday</strong>${
+        params.turningAge != null ? ` — turning ${params.turningAge} today` : ""
+      }! We've written a special birthday bedtime story just for them.</p>`
+    : "";
+  const bodyLine = birthday
+    ? `<p>Your illustrated <strong>birthday</strong> bedtime short story for <strong>${params.childName}</strong> is attached as a PDF — a once-a-year treat for tonight's read-aloud.</p>`
+    : `<p>Your illustrated bedtime short story for <strong>${params.childName}</strong> is attached as a PDF — perfect for tonight's read-aloud at 6pm.</p>`;
+
   await sendPdfEmail({
     to: params.to,
-    subject: `Tonight's story for ${params.childName}: ${params.storyTitle}`,
+    subject,
     html: `
       <div style="font-family: Georgia, serif; max-width: 560px; margin: 0 auto; color: #1e293b;">
         <p>Hi ${params.parentName},</p>
+        ${intro}
         <p>${params.teaser}</p>
-        <p>Your illustrated bedtime short story for <strong>${params.childName}</strong> is attached as a PDF — perfect for tonight's read-aloud at 6pm.</p>
+        ${bodyLine}
         <p style="color: #64748b; font-size: 14px;">
           <a href="${params.manageUrl}">Manage your subscription</a>
         </p>

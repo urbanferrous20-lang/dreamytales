@@ -106,3 +106,38 @@ export function birthDateFromRecord(record: {
   }
   return undefined;
 }
+
+function calendarDayInSast(date: Date): { year: number; month: number; day: number } {
+  const sast = new Date(date.toLocaleString("en-US", { timeZone: "Africa/Johannesburg" }));
+  return { year: sast.getFullYear(), month: sast.getMonth(), day: sast.getDate() };
+}
+
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+/** True when storyDate (SAST calendar day) matches the child's birth month/day. */
+export function isBirthdayOnDate(birthDate: Date | string, storyDate: Date): boolean {
+  const parsed = typeof birthDate === "string" ? parseBirthDate(birthDate) : birthDate;
+  if (!parsed) return false;
+
+  const story = calendarDayInSast(storyDate);
+  const birthMonth = parsed.getUTCMonth();
+  const birthDay = parsed.getUTCDate();
+
+  // Feb 29 birthdays are celebrated on Feb 28 in non-leap years.
+  if (birthMonth === 1 && birthDay === 29) {
+    if (story.month === 1 && story.day === 29) return true;
+    if (story.month === 1 && story.day === 28 && !isLeapYear(story.year)) return true;
+    return false;
+  }
+
+  return story.month === birthMonth && story.day === birthDay;
+}
+
+/** Child's age on a given calendar day (e.g. story date). */
+export function getAgeOnDate(birthDate: Date | string, onDate: Date): number {
+  const parsed = typeof birthDate === "string" ? parseBirthDate(birthDate) : birthDate;
+  if (!parsed) return 5;
+  return clampStoryAge(ageFromBirthDate(parsed, onDate));
+}

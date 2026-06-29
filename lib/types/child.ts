@@ -8,7 +8,11 @@ import {
   MIN_STORY_AGE,
   parseBirthDate,
 } from "@/lib/child-age";
-import { SA_LANGUAGE_IDS, getLanguageLabel, getStoryLanguageInstruction, type SALanguageId } from "@/lib/sa-languages";
+import {
+  ACTIVE_STORY_LANGUAGE_IDS,
+  getLanguageLabel,
+  getStoryLanguageInstruction,
+} from "@/lib/sa-languages";
 import type { BillingInterval } from "@/lib/pricing";
 
 export const INTEREST_OPTIONS = [
@@ -52,7 +56,7 @@ export const childProfileSchema = z
     storyMood: z.enum(["gentle", "adventurous", "funny", "educational"]).default("gentle"),
     moralTheme: z.string().optional(),
     readAloudBy: z.enum(["parent", "child", "both"]).default("parent"),
-    language: z.enum(SA_LANGUAGE_IDS, { message: "Choose a story language" }),
+    language: z.enum(ACTIVE_STORY_LANGUAGE_IDS, { message: "Choose a story language" }),
     /** Legacy signups may still send age; ignored when birthDate is present. */
     age: z.coerce.number().min(MIN_STORY_AGE).max(MAX_STORY_AGE).optional(),
   })
@@ -124,7 +128,7 @@ export function childProfileToPromptContext(child: ChildProfileInput): string {
     child.topicsToAvoid ? `Avoid: ${child.topicsToAvoid}` : null,
     `Mood: ${child.storyMood}`,
     child.moralTheme ? `Moral theme: ${child.moralTheme}` : null,
-    `Story language: ${getLanguageLabel(child.language)} — ${getStoryLanguageInstruction(child.language as SALanguageId)}`,
+    `Story language: ${getLanguageLabel(child.language)} — ${getStoryLanguageInstruction(child.language)}`,
   ]
     .filter(Boolean)
     .join("\n");

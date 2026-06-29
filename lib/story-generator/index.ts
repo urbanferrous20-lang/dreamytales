@@ -9,9 +9,16 @@ import {
   type ChildProfileInput,
 } from "@/lib/types/child";
 import { formatSaLocation } from "@/lib/sa-locations";
-import { buildStorySystemPrompt, type SALanguageId } from "@/lib/sa-languages";
+import { buildStorySystemPrompt, resolveStoryLanguage } from "@/lib/sa-languages";
 import { formatTopicsToAvoid, getIllustrationContentPolicy, getStoryFantasyPolicy } from "@/lib/story-content-policy";
-import { formatStorySettingPrompt, pickStorySetting, type StorySetting } from "@/lib/story-settings";
+import { formatStorySettingPrompt, getBirthdayStorySetting, pickStorySetting, type StorySetting } from "@/lib/story-settings";
+import { formatArchetypePrompt, pickStoryArchetype, type StoryArchetype } from "@/lib/story-archetypes";
+import {
+  formatRecentStoryAvoidance,
+  pickFocusInterest,
+  STORY_GENERATION_TEMPERATURE,
+  type RecentStoryHint,
+} from "@/lib/story-variation";
 import {
   birthDateFromRecord,
   estimateBirthDateFromAge,
@@ -41,7 +48,8 @@ export type GeneratedStory = {
 };
 
 export async function generateCharacterBible(child: ChildProfileInput): Promise<CharacterBible> {
-  const systemPrompt = buildStorySystemPrompt(child.language as SALanguageId, child.age);
+  const languageId = resolveStoryLanguage(child.language);
+  const systemPrompt = buildStorySystemPrompt(languageId, child.age);
   const avoidLine = formatTopicsToAvoid(child.topicsToAvoid);
   return deepseekJson<CharacterBible>([
     { role: "system", content: systemPrompt },
@@ -62,10 +70,10 @@ export async function generateNightlyStory(params: {
   child: ChildProfileInput;
   characterBible: CharacterBible;
   storyNumber: number;
-  recentSummaries: string[];
+  recentStories: RecentStoryHint[];
   recentSettingKeys: string[];
   setting?: StorySetting;
-}): Promise<{ story: GeneratedStory; setting: StorySetting }> {
+}): Promise<{ story: GeneratedStory; setting: StorySetting; archetype: StoryArchetype }> {
   const setting =
     params.setting ??
     pickStorySetting({
@@ -74,8 +82,62 @@ export async function generateNightlyStory(params: {
       recentSettingKeys: params.recentSettingKeys,
     });
 
+  const archetype = pickStoryArchetype({
+    recentArchetypeKeys: params.recentStories
+      .map((s) => s.archetypeKey)
+      .filter((key): key is string => Boolean(key)),
+  });
+  const focusInterest = pickFocusInterest(params.child.interests, params.storyNumber);
+
+  const languageId = resolveStoryLanguage(params.child.language);
   const budget = getWordBudget(params.child.age);
-  const systemPrompt = buildStorySystemPrompt(params.child.language as SALanguageId, params.child.age);
+  const systemPrompt = buildStorySystemPrompt(languageId, params.child.age);
+  const avoidLine = formatTopicsToAvoid(params.child.topicsToAvoid);
+  const settingPrompt = formatStorySettingPrompt(setting, params.child);
+  const archetypePrompt = formatArchetypePrompt(archetype);
+  const recentAvoidance = formatRecentStoryAvoidance(params.recentStories);
+
+  const story = await deepseekJson<GeneratedStory>(
+    [
+      { role: "system", content: systemPrompt },
+      {
+        role: "user",
+        content: `Write story #${params.storyNumber} as JSON with fields: title, teaser (2 sentences for email), summary (1 line for dedup — mention setting and story type), pages (array of 10 items with pageNumber, text, sceneDescription, mood).
+
+Word budget: ${budget.min}-${budget.max} total words (child is ${params.child.age} years old).
+Character bible: ${JSON.stringify(params.characterBible)}
+Child: ${childProfileToPromptContext(params.child)}
+${settingPrompt}
+${archetypePrompt}
+TONIGHT'S SPOTLIGHT INTEREST: "${focusInterest}" — make this interest the heart of tonight's plot. Other interests may appear lightly or not at all.
+Story mood preference from parent: ${params.child.storyMood}${params.child.moralTheme ? `. Optional moral theme: ${params.child.moralTheme}` : ""}.
+${recentAvoidance}
+${avoidLine ? `${avoidLine}\n` : ""}
+${getStoryFantasyPolicy(params.child.age)}
+STRUCTURE RULES:
+- Follow tonight's story TYPE arc above — it overrides any generic template.
+- Vary the opening (do not always start with magic appearing in the bedroom).
+- Page 10: sleepy goodnight at home with the child's name.
+Each page's sceneDescription should match the scene and show fantasy visually for illustration.
+Re-check every page against the content, safety, and fantasy rules before responding.`,
+      },
+    ],
+    { temperature: STORY_GENERATION_TEMPERATURE }
+  );
+
+  return { story, setting, archetype };
+}
+
+export async function generateBirthdayStory(params: {
+  child: ChildProfileInput;
+  characterBible: CharacterBible;
+  storyNumber: number;
+  turningAge: number;
+}): Promise<{ story: GeneratedStory; setting: StorySetting }> {
+  const setting = getBirthdayStorySetting(params.child, params.turningAge);
+  const languageId = resolveStoryLanguage(params.child.language);
+  const budget = getWordBudget(params.turningAge);
+  const systemPrompt = buildStorySystemPrompt(languageId, params.turningAge);
   const avoidLine = formatTopicsToAvoid(params.child.topicsToAvoid);
   const settingPrompt = formatStorySettingPrompt(setting, params.child);
 
@@ -83,17 +145,23 @@ export async function generateNightlyStory(params: {
     { role: "system", content: systemPrompt },
     {
       role: "user",
-      content: `Write story #${params.storyNumber} as JSON with fields: title, teaser (2 sentences for email), summary (1 line for dedup — mention the setting type), pages (array of 10 items with pageNumber, text, sceneDescription, mood).
+      content: `Write a SPECIAL BIRTHDAY story (#${params.storyNumber} in the series) as JSON with fields: title, teaser (2 sentences for email — mention it is their birthday tonight), summary (1 line — note "birthday story"), pages (array of 10 items with pageNumber, text, sceneDescription, mood).
 
-Word budget: ${budget.min}-${budget.max} total words (child is ${params.child.age} years old).
+This is ${params.child.name}'s birthday — they are turning ${params.turningAge} today.
+Word budget: ${budget.min}-${budget.max} total words.
 Character bible: ${JSON.stringify(params.characterBible)}
 Child: ${childProfileToPromptContext(params.child)}
 ${settingPrompt}
-Recent stories to avoid repeating: ${params.recentSummaries.join("; ") || "none yet"}
 ${avoidLine ? `${avoidLine}\n` : ""}
-${getStoryFantasyPolicy(params.child.age)}
-Story arc: hook with a spark of magic, want, gentle problem, two attempts with fantasy helpers or enchanted twists, small wonder-filled climax, calm resolution, sleepy close at home.
-Each page's sceneDescription should show the fantasy element visually for illustration.
+${getStoryFantasyPolicy(params.turningAge)}
+BIRTHDAY STORY RULES:
+- The title and opening should feel celebratory and personal — this happens once a year.
+- Include the turning age naturally (e.g. "six candles" or "turning six") without making it the only focus.
+- Weave in their interests, favourite colours, toy, pet, best friend, or siblings if listed in the profile.
+- Middle pages: gentle magical birthday wonder (glowing candles, star wishes, enchanted cake, friendly magical guests).
+- Final pages: wind down — yawns, soft goodnights, sleepy gratitude — same calm bedtime tone as every other night.
+- Do NOT repeat a standard adventure plot; this must read clearly as a birthday story.
+Each page's sceneDescription should show birthday magic visually for illustration.
 Re-check every page against the content, safety, and fantasy rules before responding.`,
     },
   ]);
@@ -185,6 +253,6 @@ export function parseChildFromDb(record: {
     storyMood: record.storyMood as ChildProfileInput["storyMood"],
     moralTheme: record.moralTheme ?? undefined,
     readAloudBy: record.readAloudBy as ChildProfileInput["readAloudBy"],
-    language: record.language as ChildProfileInput["language"],
+    language: resolveStoryLanguage(record.language),
   };
 }

@@ -8,7 +8,7 @@ Dreamy Tales is a subscription service for parents of children aged 3–12. Each
 
 - Nightly personalised bedtime short stories (30+ per month)
 - Custom illustrations and child-specific storylines
-- All 11 official South African languages (English, Afrikaans, isiZulu, isiXhosa, and more)
+- Stories in English or Afrikaans (more SA languages coming soon)
 - Illustrated PDF delivered by email at 6pm South African time
 - Parent dashboard to download past stories and manage subscription
 

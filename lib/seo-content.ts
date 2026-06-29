@@ -7,6 +7,7 @@ import {
   monthlyTotal,
 } from "@/lib/pricing";
 import { CONTACT_EMAIL, SITE_DOMAIN, SITE_URL } from "@/lib/site";
+import { STORY_LANGUAGE_MARKETING_LABEL } from "@/lib/sa-languages";
 
 export const SITE_NAME = "Dreamy Tales";
 
@@ -15,7 +16,7 @@ export const DEFAULT_TITLE =
 
 export const DEFAULT_DESCRIPTION =
   "Custom illustrated bedtime short stories delivered to your inbox every night at 6pm SAST. " +
-  `${formatZar(BASE_MONTHLY_ZAR)}/month for 30+ unique stories. All 11 SA languages. ${TRIAL_DAYS}-day free trial.`;
+  `${formatZar(BASE_MONTHLY_ZAR)}/month for 30+ unique stories. ${STORY_LANGUAGE_MARKETING_LABEL}. ${TRIAL_DAYS}-day free trial.`;
 
 /** Search & discovery keywords — South Africa + parent intent */
 export const SEO_KEYWORDS = [
@@ -27,8 +28,7 @@ export const SEO_KEYWORDS = [
   "nightly bedtime short stories email",
   "children's story subscription",
   "Afrikaans bedtime short stories",
-  "isiZulu bedtime short stories",
-  "isiXhosa bedtime short stories",
+  "English bedtime short stories South Africa",
   "personalised children's books South Africa",
   "bedtime short stories Cape Town",
   "bedtime short stories Johannesburg",
@@ -49,7 +49,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Which languages are available?",
-    a: "All 11 of South Africa's official languages — including English, Afrikaans, isiZulu, isiXhosa, Sesotho, Setswana, and more. Choose your language during signup and every nightly story is written in it.",
+    a: `${STORY_LANGUAGE_MARKETING_LABEL} — choose English or Afrikaans during signup and every nightly story is written in your chosen language. More South African languages are coming soon.`,
   },
   {
     q: "Can I leave a review?",
@@ -182,13 +182,13 @@ export function buildLlmsFullText(): string {
 
 Dreamy Tales (${SITE_URL}) is a South African subscription service for parents of children aged 3–12. Every evening at 6pm South African Standard Time (SAST), subscribers receive a brand-new personalised bedtime short story as an illustrated PDF in their email inbox.
 
-Each story is written for a specific child using their name, age, interests, hometown, and family details from a signup questionnaire. Stories are inclusive, age-appropriate, and can be written in any of South Africa's 11 official languages.
+Each story is written for a specific child using their name, age, interests, hometown, and family details from a signup questionnaire. Stories are inclusive, age-appropriate, and written in English or Afrikaans (${STORY_LANGUAGE_MARKETING_LABEL}).
 
 ## Who is it for?
 
 - Parents in South Africa who want fresh bedtime short stories without buying new books every week
 - Families who want stories featuring their child's name, interests, and local places
-- Multilingual households wanting bedtime short stories in Afrikaans, isiZulu, isiXhosa, Sesotho, Setswana, or other SA languages
+- Bilingual and Afrikaans-speaking households wanting bedtime short stories in English or Afrikaans
 - Parents of multiple children — each child gets their own separate story stream
 
 ## Pricing (${SITE_DOMAIN})
@@ -226,6 +226,6 @@ Dreamy Tales operates in the Republic of South Africa. Personal information is p
 
 ## Search terms people use
 
-personalised bedtime short stories South Africa, custom children's bedtime short stories, bedtime short story subscription SA, illustrated PDF stories for kids, nightly bedtime short stories email, Afrikaans bedtime short stories, isiZulu bedtime short stories, AI bedtime short stories for children, PayFast subscription bedtime short stories, Dreamy Tales, ${SITE_DOMAIN}
+personalised bedtime short stories South Africa, custom children's bedtime short stories, bedtime short story subscription SA, illustrated PDF stories for kids, nightly bedtime short stories email, Afrikaans bedtime short stories, English bedtime short stories South Africa, AI bedtime short stories for children, PayFast subscription bedtime short stories, Dreamy Tales, ${SITE_DOMAIN}
 `;
 }

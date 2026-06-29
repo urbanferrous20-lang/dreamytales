@@ -19,6 +19,8 @@ Ready-to-upload images are in [`docs/marketing/assets/`](assets/):
 
 **Also use on ads:** Your live sample story pages from the site (`/samples/story-page-1.png` etc.) once deployed — real product proof converts better than generic art.
 
+> **Language update (2025):** Product now offers **English & Afrikaans** only. Update `dreamytales-ad-languages.png` and GIF frame `05-11-languages.png` in Canva before running Variant C — replace "11 languages" copy with "English & Afrikaans".
+
 ---
 
 ## Phase 1 — A/B test (Week 1)
@@ -39,7 +41,7 @@ Campaign: Dreamy Tales — Signups — A/B Test
 │
 ├── Ad Set A — "Tired parent" (Broad SA parents)
 ├── Ad Set B — "Dinosaur meme" (Broad SA parents)
-└── Ad Set C — "11 languages" (Broad SA parents + language interests)
+└── Ad Set C — "English & Afrikaans" (Broad SA parents + Afrikaans/bilingual interests)
 ```
 
 **Why same audience for all 3?** Isolates the creative/message variable. Audience tests come in Phase 2.
@@ -73,7 +75,7 @@ Read "Goodnight Moon" for the 400th time? 😴
 Dreamy Tales sends a brand-new personalised bedtime story to your inbox every night at 6pm — with your child's name, interests, and hometown.
 
 ✨ 30+ illustrated stories per month
-🌍 All 11 official SA languages
+🌍 English & Afrikaans bedtime stories
 💛 From R99/month (less than R3.50 per story)
 🎁 7-day free trial
 
@@ -107,14 +109,14 @@ R99/month · 7-day free trial · Cancel anytime
 
 ---
 
-### Variant C — “11 languages” (SA differentiator)
+### Variant C — “English & Afrikaans” (SA differentiator)
 
-**Creative:** `dreamytales-ad-languages.png`  
-**Headline:** Bedtime stories in your home language  
+**Creative:** `dreamytales-ad-languages.png` *(update image copy in Canva — see note below)*  
+**Headline:** Bedtime stories in English or Afrikaans  
 **Primary text:**
 
 ```
-Bedtime stories in English, Afrikaans, isiZulu, isiXhosa — and all 11 official SA languages. 🇿🇦
+Bedtime stories in English or Afrikaans — written for YOUR child. 🇿🇦
 
 Every evening at 6pm, a new illustrated PDF lands in your inbox. Personalised for kids aged 3–12.
 
@@ -122,7 +124,7 @@ Every evening at 6pm, a new illustrated PDF lands in your inbox. Personalised fo
 From R99/month after trial
 ```
 
-**Link description:** 11 SA languages · Free trial  
+**Link description:** English & Afrikaans · Free trial  
 **CTA button:** Sign Up  
 **URL:** `https://dreamytales.co.za/signup?utm_source=facebook&utm_medium=paid&utm_campaign=ab_test&utm_content=variant_c`
 
@@ -222,7 +224,7 @@ Test these against your winning creative (one variable at a time):
 
 [0:13] Fully illustrated. Written for kids three to twelve.
 
-[0:17] And yes — all eleven official South African languages.
+[0:17] In English or Afrikaans — your choice at signup.
 
 [0:21] That's thirty-plus fresh stories a month… for less than three rand fifty a night.
 
@@ -328,7 +330,7 @@ Moeg vir dieselfde boek elke aand? 😴
 
 Dreamy Tales stuur elke aand om 6pm 'n nuwe persoonlike bedtydverhaal na jou inbox — met jou kind se naam, belangstellings en selfs hulle tuisdorp.
 
-✨ 30+ stories per maand · 11 SA tale
+✨ 30+ stories per maand · Engels & Afrikaans
 🎁 7 dae gratis · R99/maand daarna
 
 Probeer gratis → dreamytales.co.za/signup

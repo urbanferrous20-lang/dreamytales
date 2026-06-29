@@ -20,12 +20,13 @@ import {
   buildWebSiteJsonLd,
   FAQ_ITEMS,
 } from "@/lib/seo-content";
+import { STORY_LANGUAGE_MARKETING_LABEL } from "@/lib/sa-languages";
 
 export const metadata = createPageMetadata({
   title: "Dreamy Tales — Personalised Bedtime Short Stories Delivered Nightly | South Africa",
   description:
     "Custom illustrated bedtime short stories in your inbox every night at 6pm SAST. " +
-    `${formatZar(BASE_MONTHLY_ZAR)}/month, all 11 SA languages, ${TRIAL_DAYS}-day free trial. ` +
+    `${formatZar(BASE_MONTHLY_ZAR)}/month, ${STORY_LANGUAGE_MARKETING_LABEL}, ${TRIAL_DAYS}-day free trial. ` +
     "Stories written for your child's name, age, and interests.",
   path: "/",
 });
@@ -61,7 +62,7 @@ const STEPS = [
   {
     step: "1",
     title: "Tell us about your child",
-    desc: "Name, age, interests, hometown, and story language — all 11 official SA languages.",
+    desc: `Name, age, interests, hometown, and story language — ${STORY_LANGUAGE_MARKETING_LABEL}.`,
     color: "bg-coral",
     ring: "ring-coral/30",
   },
@@ -82,7 +83,7 @@ const STEPS = [
 ];
 
 const HIGHLIGHTS = [
-  { icon: "🌍", label: "11 SA languages", color: "bg-purple/15 text-purple" },
+  { icon: "🌍", label: STORY_LANGUAGE_MARKETING_LABEL, color: "bg-purple/15 text-purple" },
   { icon: "🌙", label: "Delivered at 6pm", color: "bg-sky/15 text-sky" },
   { icon: "✨", label: `${TRIAL_DAYS}-day free trial`, color: "bg-gold/20 text-gold" },
   { icon: "📖", label: "30+ stories/month", color: "bg-coral/15 text-coral" },

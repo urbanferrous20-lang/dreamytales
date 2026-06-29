@@ -102,6 +102,8 @@ model Story {
   title     String
   summary   String   @db.Text
   settingKey String?
+  archetypeKey String?
+  isBirthdayStory Boolean @default(false)
   pdfPath   String
   storyDate DateTime
   sentAt    DateTime?

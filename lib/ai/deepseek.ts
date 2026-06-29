@@ -45,7 +45,13 @@ export async function deepseekChat(
   return content;
 }
 
-export async function deepseekJson<T>(messages: ChatMessage[]): Promise<T> {
-  const content = await deepseekChat(messages, { json: true, temperature: 0.6 });
+export async function deepseekJson<T>(
+  messages: ChatMessage[],
+  options?: { temperature?: number }
+): Promise<T> {
+  const content = await deepseekChat(messages, {
+    json: true,
+    temperature: options?.temperature ?? 0.6,
+  });
   return JSON.parse(content) as T;
 }

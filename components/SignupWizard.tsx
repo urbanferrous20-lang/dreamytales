@@ -14,7 +14,7 @@ import {
 } from "@/lib/types/child";
 import { ageFromBirthDate, birthDateInputBounds, parseBirthDate } from "@/lib/child-age";
 import { SA_PROVINCES, CITIES_BY_PROVINCE, type SAProvince } from "@/lib/sa-locations";
-import { SA_LANGUAGES, getLanguageLabel } from "@/lib/sa-languages";
+import { ACTIVE_STORY_LANGUAGES, STORY_LANGUAGE_MARKETING_LABEL, getLanguageLabel } from "@/lib/sa-languages";
 import {
   annualSavings,
   annualTotal,
@@ -535,7 +535,7 @@ function ChildForm({
       <div>
         <label className="block text-sm font-medium text-navy mb-1">Story language</label>
         <p className="text-xs text-navy/50 mb-2">
-          Every nightly story is written in your chosen language — all 11 of South Africa&apos;s official languages.
+          Every nightly story is written in your chosen language — {STORY_LANGUAGE_MARKETING_LABEL}. More SA languages coming soon.
         </p>
         <select
           value={child.language}
@@ -544,7 +544,7 @@ function ChildForm({
           }
           className="w-full border border-navy/20 rounded-xl px-4 py-3 text-navy"
         >
-          {SA_LANGUAGES.map((lang) => (
+          {ACTIVE_STORY_LANGUAGES.map((lang) => (
             <option key={lang.id} value={lang.id}>
               {lang.label}
             </option>

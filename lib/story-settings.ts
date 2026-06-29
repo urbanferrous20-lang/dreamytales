@@ -1,3 +1,4 @@
+import { randomInt } from "crypto";
 import { type SAProvince } from "@/lib/sa-locations";
 import type { ChildProfileInput } from "@/lib/types/child";
 import { getResolvedCity } from "@/lib/types/child";
@@ -231,14 +232,12 @@ export function pickStorySetting(params: {
   for (const kind of kindOrder) {
     const candidates = pool.filter((s) => s.kind === kind && !recent.has(s.key));
     if (candidates.length > 0) {
-      const index = (params.storyNumber - 1) % candidates.length;
-      return candidates[index]!;
+      return candidates[randomInt(candidates.length)]!;
     }
   }
 
-  // All recent — pick by story number anyway
-  const index = (params.storyNumber - 1) % pool.length;
-  return pool[index]!;
+  // All recent — pick randomly from full pool
+  return pool[randomInt(pool.length)]!;
 }
 
 export function formatStorySettingPrompt(setting: StorySetting, child: ChildProfileInput): string {
@@ -248,4 +247,22 @@ export function formatStorySettingPrompt(setting: StorySetting, child: ChildProf
     `Structure: open with a familiar beat in ${city}, journey through tonight's setting in the middle pages, ` +
     `return to home and sleep on page 10. Tie magic to the child's interests and character bible.`
   );
+}
+
+export function getBirthdayStorySetting(child: ChildProfileInput, turningAge: number): StorySetting {
+  const city = getResolvedCity(child);
+  const place = child.favoritePlace?.trim() || "their home";
+  return {
+    key: "birthday",
+    kind: "home",
+    label: "Birthday celebration",
+    prompt:
+      `Tonight is ${child.name}'s BIRTHDAY — they are turning ${turningAge} today. ` +
+      `This is a special once-a-year birthday story rooted in ${city}, beginning at ${place}. ` +
+      "Weave a gentle magical birthday celebration: enchanted candles, a softly glowing cake or starlight wishes, " +
+      "surprise cameos from people and pets in their profile (best friend, siblings, pet) if listed, " +
+      "and small joyful moments tied to their interests. " +
+      "Celebratory in the middle pages but MUST wind down to a calm, sleepy birthday-night close — this is still bedtime reading. " +
+      "No loud party chaos, expensive gifts, brands, or sugar overload.",
+  };
 }

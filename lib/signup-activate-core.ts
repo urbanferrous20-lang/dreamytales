@@ -5,6 +5,7 @@ import { recurringCharge, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing
 import { childProfileSchema, type ChildProfileInput } from "@/lib/types/child";
 import type { User } from "@prisma/client";
 import { parseBirthDate, estimateBirthDateFromAge, getEffectiveAge } from "@/lib/child-age";
+import { resolveStoryLanguage } from "@/lib/sa-languages";
 
 function parseStoredChildren(childrenJson: string): ChildProfileInput[] | null {
   const trimmed = childrenJson.trim();
@@ -77,7 +78,7 @@ function parseStoredChildren(childrenJson: string): ChildProfileInput[] | null {
         storyMood: (child.storyMood as ChildProfileInput["storyMood"]) ?? "gentle",
         moralTheme: child.moralTheme ? String(child.moralTheme) : undefined,
         readAloudBy: (child.readAloudBy as ChildProfileInput["readAloudBy"]) ?? "parent",
-        language: (child.language as ChildProfileInput["language"]) ?? "english",
+        language: resolveStoryLanguage(String(child.language ?? "english")),
       };
     });
   } catch (error) {
@@ -115,7 +116,7 @@ async function createChildProfiles(userId: string, children: ChildProfileInput[]
         storyMood: child.storyMood,
         moralTheme: child.moralTheme ?? null,
         readAloudBy: child.readAloudBy,
-        language: child.language,
+        language: resolveStoryLanguage(child.language),
       },
     });
   }

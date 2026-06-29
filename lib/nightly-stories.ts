@@ -3,14 +3,16 @@ import { prisma } from "@/lib/db";
 import { sendStoryEmail, sendAdminAlert } from "@/lib/email";
 import { buildStoryPdf } from "@/lib/pdf-builder";
 import { getAppUrl } from "@/lib/payfast";
-import { getAgeBand, parseBirthDate } from "@/lib/child-age";
+import { getAgeBand, isBirthdayOnDate, getAgeOnDate, parseBirthDate } from "@/lib/child-age";
 import {
   generateCharacterBible,
+  generateBirthdayStory,
   generateNightlyStory,
   generatePageIllustrations,
   parseChildFromDb,
   type CharacterBible,
 } from "@/lib/story-generator";
+import { resolveStoryLanguage } from "@/lib/sa-languages";
 import type { ChildProfileInput } from "@/lib/types/child";
 import {
   getStoryDeliveryWindowBlockReason,
@@ -38,7 +40,7 @@ async function fetchActiveChildren() {
     },
     include: {
       user: { include: { subscription: true } },
-      stories: { orderBy: { storyDate: "desc" }, take: 7 },
+      stories: { orderBy: { storyDate: "desc" }, take: 14 },
     },
     orderBy: { id: "asc" },
   });
@@ -56,6 +58,7 @@ async function prepareChildForStory(child: ActiveChild): Promise<{
   const data: {
     age?: number;
     birthDate?: Date;
+    language?: string;
     characterBible?: string | null;
   } = {};
 
@@ -66,6 +69,12 @@ async function prepareChildForStory(child: ActiveChild): Promise<{
   if (!child.birthDate && childInput.birthDate) {
     const parsed = parseBirthDate(childInput.birthDate);
     if (parsed) data.birthDate = parsed;
+  }
+
+  const resolvedLanguage = resolveStoryLanguage(child.language);
+  if (resolvedLanguage !== child.language) {
+    data.language = resolvedLanguage;
+    childInput.language = resolvedLanguage;
   }
 
   if (previousBand !== newBand) {
@@ -107,7 +116,7 @@ export async function countPendingNightlyStories(storyDate = getStoryDateSast())
 export async function processNightlyStoryForChild(
   child: ActiveChild,
   storyDate = getStoryDateSast()
-): Promise<{ skipped?: boolean; success?: boolean; title?: string; setting?: string; error?: string }> {
+): Promise<{ skipped?: boolean; success?: boolean; title?: string; setting?: string; archetype?: string; birthday?: boolean; error?: string }> {
   const existing = await prisma.story.findUnique({
     where: { childId_storyDate: { childId: child.id, storyDate } },
   });
@@ -126,22 +135,60 @@ export async function processNightlyStoryForChild(
     }
 
     const storyNumber = child.stories.length + 1;
-    const recentSummaries = child.stories.map((s) => s.summary);
+    const recentStories = child.stories.map((s) => ({
+      title: s.title,
+      summary: s.summary,
+      settingKey: s.settingKey,
+      archetypeKey: (s as { archetypeKey?: string | null }).archetypeKey,
+    }));
     const recentSettingKeys = child.stories
       .map((s) => s.settingKey)
       .filter((key): key is string => Boolean(key));
 
-    const { story, setting } = await generateNightlyStory({
-      child: childInput,
-      characterBible,
-      storyNumber,
-      recentSummaries,
-      recentSettingKeys,
-    });
+    const isBirthday =
+      child.birthDate != null &&
+      isBirthdayOnDate(child.birthDate, storyDate);
+
+    const turningAge = isBirthday
+      ? getAgeOnDate(child.birthDate!, storyDate)
+      : childInput.age;
+
+    const childForStory =
+      isBirthday && turningAge !== childInput.age
+        ? { ...childInput, age: turningAge }
+        : childInput;
+
+    let story;
+    let setting;
+    let archetypeLabel: string | undefined;
+    let archetypeKey: string | undefined;
+
+    if (isBirthday) {
+      const birthdayResult = await generateBirthdayStory({
+        child: childForStory,
+        characterBible,
+        storyNumber,
+        turningAge,
+      });
+      story = birthdayResult.story;
+      setting = birthdayResult.setting;
+    } else {
+      const nightlyResult = await generateNightlyStory({
+        child: childInput,
+        characterBible,
+        storyNumber,
+        recentStories,
+        recentSettingKeys,
+      });
+      story = nightlyResult.story;
+      setting = nightlyResult.setting;
+      archetypeKey = nightlyResult.archetype.key;
+      archetypeLabel = nightlyResult.archetype.label;
+    }
 
     const imagePaths = await generatePageIllustrations(
       child.id,
-      childInput,
+      childForStory,
       characterBible,
       story.pages,
       setting
@@ -165,6 +212,8 @@ export async function processNightlyStoryForChild(
         title: story.title,
         summary: story.summary,
         settingKey: setting.key,
+        archetypeKey: archetypeKey ?? null,
+        isBirthdayStory: isBirthday,
         pdfPath,
         storyDate,
       },
@@ -172,6 +221,8 @@ export async function processNightlyStoryForChild(
         title: story.title,
         summary: story.summary,
         settingKey: setting.key,
+        archetypeKey: archetypeKey ?? null,
+        isBirthdayStory: isBirthday,
         pdfPath,
       },
     });
@@ -184,6 +235,8 @@ export async function processNightlyStoryForChild(
       teaser: story.teaser,
       pdfPath,
       manageUrl: `${getAppUrl()}/dashboard`,
+      isBirthday,
+      turningAge: isBirthday ? turningAge : undefined,
     });
 
     await prisma.story.update({
@@ -191,7 +244,13 @@ export async function processNightlyStoryForChild(
       data: { sentAt: new Date() },
     });
 
-    return { success: true, title: story.title, setting: setting.label };
+    return {
+      success: true,
+      title: story.title,
+      setting: setting.label,
+      archetype: archetypeLabel,
+      birthday: isBirthday,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await sendAdminAlert(
