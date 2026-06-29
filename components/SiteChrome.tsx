@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
+import { MetaPixelPageViews } from "@/components/MetaPixel";
 
 export async function SiteChrome({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
@@ -15,6 +16,7 @@ export async function SiteChrome({ children }: { children: React.ReactNode }) {
   return (
     <>
       <AnalyticsTracker />
+      <MetaPixelPageViews />
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
