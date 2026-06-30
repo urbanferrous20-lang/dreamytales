@@ -13,10 +13,24 @@ Ready-to-upload images in [`docs/marketing/assets/`](assets/):
 |------|--------|---------|
 | `dreamytales-affiliate-school-partner.png` | Square | Email/DM to principals — recruit school partners |
 | `dreamytales-affiliate-parent-share.png` | Square | Schools share with parents (add their link in post text) |
+| `dreamytales-affiliate-canva-template.png` | Square | **Canva template** — dashed box says “Paste your school link here” |
 | `dreamytales-live-launch-feed.png` | Square | Facebook/Instagram Feed — launch announcement |
 | `dreamytales-live-launch-reels.png` | Vertical 9:16 | Instagram/Facebook Stories & Reels cover |
 
 > **Tip:** Affiliate links are per school (e.g. `dreamytales.co.za/r/springs-primary`). Create the partner in admin first, then paste the **Copy link** URL into WhatsApp, newsletters, or post captions — the image stays generic.
+
+### Canva template (per school)
+
+Use `dreamytales-affiliate-canva-template.png` as your starting point:
+
+1. **Upload to Canva** → Create design → Upload → use as background (1080×1080)
+2. **Replace `[School Name]`** with the real school name (add a text box over the headline if needed)
+3. **Replace the dashed box** — delete “PASTE YOUR SCHOOL LINK HERE” and add your link from admin (**Copy link**), e.g. `dreamytales.co.za/r/springs-primary`
+   - Font suggestion: clean sans-serif (Montserrat or Open Sans), white or gold on navy
+   - Keep the link large enough to read on mobile
+4. **Export** as PNG and share on WhatsApp, school newsletter, or Facebook
+
+Or skip Canva: use the finished PNG and put the link **in the post caption** below the image (simplest).
 
 ---
 
