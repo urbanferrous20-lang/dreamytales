@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { trackAnalyticsEvent } from "@/components/AnalyticsTracker";
+import { getStoredAffiliateCode } from "@/lib/affiliate-client";
 import {
   INTEREST_OPTIONS,
   type BillingInterval,
@@ -81,6 +82,7 @@ export function SignupWizard() {
       agreedToTerms: agreedToTerms as true,
       billingInterval,
       children,
+      affiliateCode: getStoredAffiliateCode() ?? undefined,
     };
 
     try {

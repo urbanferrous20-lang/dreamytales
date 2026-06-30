@@ -215,6 +215,9 @@ export async function activateSignup(
           name: pending.name,
           passwordHash: pending.passwordHash,
           signupRef: signupId,
+          ...(existing.affiliateCode || !pending.affiliateCode
+            ? {}
+            : { affiliateCode: pending.affiliateCode }),
         },
       });
 
@@ -251,6 +254,7 @@ export async function activateSignup(
         name: pending.name,
         passwordHash: pending.passwordHash,
         signupRef: signupId,
+        affiliateCode: pending.affiliateCode,
         subscription: {
           create: {
             status: "trial",

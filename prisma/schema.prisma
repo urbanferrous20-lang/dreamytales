@@ -13,6 +13,7 @@ model User {
   name         String
   passwordHash String
   signupRef    String?        @unique
+  affiliateCode String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   children     ChildProfile[]
@@ -21,6 +22,9 @@ model User {
   siteReview   SiteReview?
   payments     Payment[]
   passwordResetTokens PasswordResetToken[]
+  affiliateConversion AffiliateConversion?
+
+  @@index([affiliateCode])
 }
 
 model StoryReview {
@@ -121,6 +125,7 @@ model PendingSignup {
   childrenJson String @db.Text
   billingInterval String @default("monthly")
   agreedToTerms Boolean @default(false)
+  affiliateCode String?
   createdAt DateTime @default(now())
   expiresAt DateTime
 }
@@ -163,8 +168,43 @@ model Payment {
   paymentStatus    String
   billingDate      DateTime?
   createdAt        DateTime  @default(now())
+  affiliateConversion AffiliateConversion?
 
   @@index([createdAt])
   @@index([paymentStatus, createdAt])
   @@index([signupId])
+}
+
+model AffiliatePartner {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  name             String
+  contactName      String?
+  contactEmail     String?
+  commissionAmount Float    @default(5)
+  active           Boolean  @default(true)
+  notes            String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  conversions      AffiliateConversion[]
+}
+
+model AffiliateConversion {
+  id               String   @id @default(cuid())
+  partnerId        String
+  partner          AffiliatePartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId   String?
+  paymentId        String?  @unique
+  payment          Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  commissionAmount Float
+  convertedAt      DateTime @default(now())
+  payoutStatus     String   @default("pending")
+  paidAt           DateTime?
+  payoutMonth      String?
+
+  @@index([partnerId, convertedAt])
+  @@index([payoutStatus, convertedAt])
+  @@index([convertedAt])
 }

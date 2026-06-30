@@ -95,6 +95,7 @@ export const signupSchema = z.object({
   }),
   billingInterval: z.enum(["monthly", "annual"]).default("monthly"),
   children: z.array(childProfileSchema).min(1, "Add at least one child"),
+  affiliateCode: z.string().optional(),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;

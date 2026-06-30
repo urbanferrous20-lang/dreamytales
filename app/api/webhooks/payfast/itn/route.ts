@@ -8,6 +8,7 @@ import {
   verifyPayfastItnSignature,
 } from "@/lib/payfast";
 import { activateSignup } from "@/lib/signup-activate";
+import { recordAffiliateConversionOnPaidPayment } from "@/lib/affiliate";
 import type { Prisma } from "@prisma/client";
 
 type UserWithSubscription = Prisma.UserGetPayload<{ include: { subscription: true } }>;
@@ -107,8 +108,10 @@ export async function POST(request: NextRequest) {
     const amount = parseFloat(data.amount_gross ?? data.amount ?? "0");
     const payfastPaymentId = data.pf_payment_id ?? data.m_payment_id ?? null;
 
+    let paymentRecordId: string | null = null;
+
     if (payfastPaymentId && user) {
-      await prisma.payment.upsert({
+      const payment = await prisma.payment.upsert({
         where: { payfastPaymentId },
         create: {
           userId: user.id,
@@ -128,6 +131,16 @@ export async function POST(request: NextRequest) {
           amountFee: parseFloat(data.amount_fee ?? "0"),
           paymentStatus: "COMPLETE",
         },
+      });
+      paymentRecordId = payment.id;
+    }
+
+    if (paymentRecordId && user && amount > 0) {
+      await recordAffiliateConversionOnPaidPayment({
+        userId: user.id,
+        subscriptionId: user.subscription?.id,
+        paymentId: paymentRecordId,
+        amountGross: amount,
       });
     }
 

@@ -5,6 +5,7 @@ import { ANALYTICS_EVENTS, logAnalyticsEventFromRequest } from "@/lib/analytics"
 import { prisma } from "@/lib/db";
 import { formatSignupApiError, hasActiveSubscription } from "@/lib/signup-errors";
 import { recurringCharge, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
+import { resolveActiveAffiliateCode } from "@/lib/affiliate";
 import {
   addDays,
   buildPayfastRedirectHtml,
@@ -25,8 +26,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, email, password, children, billingInterval } = parsed.data;
+    const { name, email, password, children, billingInterval, affiliateCode } = parsed.data;
     const normalizedEmail = email.trim().toLowerCase();
+    const resolvedAffiliateCode = await resolveActiveAffiliateCode(affiliateCode);
 
     const existing = await prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -62,6 +64,7 @@ export async function POST(request: NextRequest) {
         childrenJson: JSON.stringify(children),
         billingInterval,
         agreedToTerms: true,
+        affiliateCode: resolvedAffiliateCode,
         expiresAt: addDays(new Date(), 7),
       },
     });
@@ -70,7 +73,7 @@ export async function POST(request: NextRequest) {
       eventType: ANALYTICS_EVENTS.SIGNUP_SUBMIT,
       sessionId: signupId,
       path: "/signup",
-      metadata: { signupId, email: normalizedEmail, childCount: children.length, billingInterval },
+      metadata: { signupId, email: normalizedEmail, childCount: children.length, billingInterval, affiliateCode: resolvedAffiliateCode },
     });
 
     const formData = buildSubscriptionFormData({

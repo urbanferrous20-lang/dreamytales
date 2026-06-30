@@ -16,12 +16,14 @@ import {
 function MetricCard({
   title,
   today,
+  yesterday,
   month,
   total,
   suffix,
 }: {
   title: string;
   today?: number | string;
+  yesterday?: number | string;
   month?: number | string;
   total?: number | string;
   suffix?: string;
@@ -32,10 +34,14 @@ function MetricCard({
   return (
     <div className="bg-white rounded-2xl p-5 border border-navy/5 shadow-sm">
       <h3 className="text-sm font-medium text-navy/60 mb-3">{title}</h3>
-      <div className="grid grid-cols-3 gap-3 text-center">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
         <div>
           <p className="text-xs text-navy/40 mb-1">Today</p>
           <p className="text-xl font-semibold text-navy">{fmt(today)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-navy/40 mb-1">Yesterday</p>
+          <p className="text-xl font-semibold text-navy">{fmt(yesterday)}</p>
         </div>
         <div>
           <p className="text-xs text-navy/40 mb-1">Month</p>
@@ -52,11 +58,13 @@ function MetricCard({
 
 function RevenueCard({
   title,
+  today,
   yesterday,
   month,
   total,
 }: {
   title: string;
+  today: number;
   yesterday: number;
   month: number;
   total: number;
@@ -64,7 +72,11 @@ function RevenueCard({
   return (
     <div className="bg-white rounded-2xl p-5 border border-navy/5 shadow-sm">
       <h3 className="text-sm font-medium text-navy/60 mb-3">{title}</h3>
-      <div className="grid grid-cols-3 gap-3 text-center">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+        <div>
+          <p className="text-xs text-navy/40 mb-1">Today</p>
+          <p className="text-xl font-semibold text-navy">{formatRevenue(today)}</p>
+        </div>
         <div>
           <p className="text-xs text-navy/40 mb-1">Yesterday</p>
           <p className="text-xl font-semibold text-navy">{formatRevenue(yesterday)}</p>
@@ -137,6 +149,11 @@ export default async function AdminDashboardPage() {
         <div>
           <h1 className="font-display text-3xl text-cream">Admin Dashboard</h1>
           <p className="text-cream/60 mt-1">Dreamy Tales site overview</p>
+          <p className="text-sm text-cream/50 mt-2">
+            <a href="/admin/affiliates" className="hover:text-cream underline underline-offset-2">
+              School affiliates →
+            </a>
+          </p>
         </div>
         <form action="/api/admin/logout" method="POST">
           <button
@@ -191,8 +208,11 @@ export default async function AdminDashboardPage() {
           <p className="text-xs text-cream/50 mt-1">{stats.trialSubscribers} on trial</p>
         </div>
         <div className="bg-gold/20 rounded-2xl p-4 border border-gold/30">
-          <p className="text-xs text-cream/60">Stories sent today</p>
+          <p className="text-xs text-cream/60">Stories sent</p>
           <p className="text-2xl font-semibold text-cream">{stats.storiesSentToday}</p>
+          <p className="text-xs text-cream/50 mt-1">
+            today · {stats.storiesSentYesterday} yesterday
+          </p>
         </div>
         <div className="bg-gold/20 rounded-2xl p-4 border border-gold/30">
           <p className="text-xs text-cream/60">Checkout in progress</p>
@@ -304,42 +324,49 @@ export default async function AdminDashboardPage() {
         <MetricCard
           title="Site visitors (unique sessions)"
           today={stats.visitors.today}
+          yesterday={stats.visitors.yesterday}
           month={stats.visitors.monthToDate}
           total={stats.visitors.total}
         />
         <MetricCard
           title="Started signup (/signup opened)"
           today={stats.signupStarts.today}
+          yesterday={stats.signupStarts.yesterday}
           month={stats.signupStarts.monthToDate}
           total={stats.signupStarts.total}
         />
         <MetricCard
           title="Began subscription (form submitted → PayFast)"
           today={stats.signupSubmits.today}
+          yesterday={stats.signupSubmits.yesterday}
           month={stats.signupSubmits.monthToDate}
           total={stats.signupSubmits.total}
         />
         <MetricCard
           title="Abandoned checkout (did not complete PayFast)"
           today={stats.abandonedCheckouts.today}
+          yesterday={stats.abandonedCheckouts.yesterday}
           month={stats.abandonedCheckouts.monthToDate}
           total={stats.abandonedCheckouts.total}
         />
         <MetricCard
           title="New subscriptions"
           today={stats.subscriptions.today}
+          yesterday={stats.subscriptions.yesterday}
           month={stats.subscriptions.monthToDate}
           total={stats.subscriptions.total}
         />
         <MetricCard
           title="PayFast payments recorded"
           today={stats.payfastPayments.today}
+          yesterday={stats.payfastPayments.yesterday}
           month={stats.payfastPayments.monthToDate}
           total={stats.payfastPayments.total}
         />
         <MetricCard
           title="PayFast checkouts completed (ITN)"
           today={stats.payfastCheckouts.today}
+          yesterday={stats.payfastCheckouts.yesterday}
           month={stats.payfastCheckouts.monthToDate}
           total={stats.payfastCheckouts.total}
         />
@@ -358,6 +385,7 @@ export default async function AdminDashboardPage() {
         </div>
         <RevenueCard
           title="Revenue (paid)"
+          today={stats.revenue.today}
           yesterday={stats.revenue.yesterday}
           month={stats.revenue.monthToDate}
           total={stats.revenue.total}
@@ -365,6 +393,7 @@ export default async function AdminDashboardPage() {
         <MetricCard
           title="Unsubscribes"
           today={stats.unsubscribes.today}
+          yesterday={stats.unsubscribes.yesterday}
           month={stats.unsubscribes.monthToDate}
           total={stats.unsubscribes.total}
         />

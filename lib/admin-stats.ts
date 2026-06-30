@@ -90,22 +90,86 @@ async function countUnsubscribesSince(since: Date): Promise<number> {
   });
 }
 
+async function uniqueVisitorsBetween(start: Date, end: Date): Promise<number> {
+  const groups = await prisma.analyticsEvent.groupBy({
+    by: ["sessionId"],
+    where: {
+      eventType: ANALYTICS_EVENTS.PAGE_VIEW,
+      createdAt: { gte: start, lte: end },
+    },
+  });
+  return groups.length;
+}
+
+async function countEventsBetween(eventType: string, start: Date, end: Date): Promise<number> {
+  return prisma.analyticsEvent.count({
+    where: { eventType, createdAt: { gte: start, lte: end } },
+  });
+}
+
+async function countPaymentsBetween(start: Date, end: Date): Promise<number> {
+  return prisma.payment.count({
+    where: {
+      paymentStatus: "COMPLETE",
+      createdAt: { gte: start, lte: end },
+    },
+  });
+}
+
+async function countSubscriptionsBetween(start: Date, end: Date): Promise<number> {
+  return prisma.subscription.count({
+    where: {
+      createdAt: { gte: start, lte: end },
+      status: { in: ["trial", "active", "cancel_pending", "cancelled"] },
+    },
+  });
+}
+
+async function countUnsubscribesBetween(start: Date, end: Date): Promise<number> {
+  return prisma.subscription.count({
+    where: {
+      OR: [
+        { cancelRequestedAt: { gte: start, lte: end } },
+        {
+          status: "cancelled",
+          updatedAt: { gte: start, lte: end },
+          cancelRequestedAt: null,
+        },
+      ],
+    },
+  });
+}
+
+async function countStoriesSentBetween(start: Date, end: Date): Promise<number> {
+  return prisma.story.count({
+    where: { sentAt: { gte: start, lte: end } },
+  });
+}
+
+export type PeriodCount = {
+  today: number;
+  yesterday: number;
+  monthToDate: number;
+  total: number;
+};
+
 export type AdminDashboardStats = {
-  visitors: { today: number; monthToDate: number; total: number };
-  signupStarts: { today: number; monthToDate: number; total: number };
-  signupSubmits: { today: number; monthToDate: number; total: number };
-  abandonedCheckouts: { active: number; today: number; monthToDate: number; total: number };
-  subscriptions: { today: number; monthToDate: number; total: number };
-  revenue: { yesterday: number; monthToDate: number; total: number };
-  unsubscribes: { today: number; monthToDate: number; total: number };
+  visitors: PeriodCount;
+  signupStarts: PeriodCount;
+  signupSubmits: PeriodCount;
+  abandonedCheckouts: { active: number; today: number; yesterday: number; monthToDate: number; total: number };
+  subscriptions: PeriodCount;
+  revenue: { today: number; yesterday: number; monthToDate: number; total: number };
+  unsubscribes: PeriodCount;
   activeSubscribers: number;
   trialSubscribers: number;
   storiesSentToday: number;
+  storiesSentYesterday: number;
   conversionRate: number;
   totalAccounts: number;
   accountsMissingSubscription: number;
-  payfastPayments: { today: number; monthToDate: number; total: number };
-  payfastCheckouts: { today: number; monthToDate: number; total: number };
+  payfastPayments: PeriodCount;
+  payfastCheckouts: PeriodCount;
   reviews: AdminReviewRow[];
   storage: StorageStats;
 };
@@ -131,68 +195,86 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
 
   const [
     visitorsToday,
+    visitorsYesterday,
     visitorsMonth,
     visitorsTotal,
     signupStartsToday,
+    signupStartsYesterday,
     signupStartsMonth,
     signupStartsTotal,
     signupSubmitsToday,
+    signupSubmitsYesterday,
     signupSubmitsMonth,
     signupSubmitsTotal,
     activationsToday,
+    activationsYesterday,
     activationsMonth,
     activationsTotal,
     activePendingSignups,
     expiredPendingSignups,
     subscriptionsToday,
+    subscriptionsYesterday,
     subscriptionsMonth,
     subscriptionsTotal,
+    revenueToday,
     revenueYesterday,
     revenueMonth,
     revenueTotal,
     unsubscribesToday,
+    unsubscribesYesterday,
     unsubscribesMonth,
     unsubscribesTotal,
     activeSubscribers,
     trialSubscribers,
     storiesSentToday,
+    storiesSentYesterday,
     siteReviews,
     storyReviews,
     totalAccounts,
     accountsMissingSubscription,
     payfastPaymentsToday,
+    payfastPaymentsYesterday,
     payfastPaymentsMonth,
     payfastPaymentsTotal,
     payfastCheckoutsToday,
+    payfastCheckoutsYesterday,
     payfastCheckoutsMonth,
     payfastCheckoutsTotal,
   ] = await Promise.all([
     uniqueVisitorsSince(todayStart),
+    uniqueVisitorsBetween(yesterdayStart, yesterdayEnd),
     uniqueVisitorsSince(monthStart),
     uniqueVisitorsSince(new Date(0)),
     countEventsSince(ANALYTICS_EVENTS.SIGNUP_START, todayStart),
+    countEventsBetween(ANALYTICS_EVENTS.SIGNUP_START, yesterdayStart, yesterdayEnd),
     countEventsSince(ANALYTICS_EVENTS.SIGNUP_START, monthStart),
     countEventsSince(ANALYTICS_EVENTS.SIGNUP_START, new Date(0)),
     countEventsSince(ANALYTICS_EVENTS.SIGNUP_SUBMIT, todayStart),
+    countEventsBetween(ANALYTICS_EVENTS.SIGNUP_SUBMIT, yesterdayStart, yesterdayEnd),
     countEventsSince(ANALYTICS_EVENTS.SIGNUP_SUBMIT, monthStart),
     countEventsSince(ANALYTICS_EVENTS.SIGNUP_SUBMIT, new Date(0)),
     countEventsSince(ANALYTICS_EVENTS.SUBSCRIPTION_ACTIVATED, todayStart),
+    countEventsBetween(ANALYTICS_EVENTS.SUBSCRIPTION_ACTIVATED, yesterdayStart, yesterdayEnd),
     countEventsSince(ANALYTICS_EVENTS.SUBSCRIPTION_ACTIVATED, monthStart),
     countEventsSince(ANALYTICS_EVENTS.SUBSCRIPTION_ACTIVATED, new Date(0)),
     prisma.pendingSignup.count({ where: { expiresAt: { gt: now } } }),
     prisma.pendingSignup.count({ where: { expiresAt: { lte: now } } }),
     countSubscriptionsSince(todayStart),
+    countSubscriptionsBetween(yesterdayStart, yesterdayEnd),
     countSubscriptionsSince(monthStart),
     countSubscriptionsSince(new Date(0)),
+    sumRevenueBetween(todayStart, now),
     sumRevenueBetween(yesterdayStart, yesterdayEnd),
     sumRevenueBetween(monthStart, now),
     sumRevenueBetween(new Date(0), now),
     countUnsubscribesSince(todayStart),
+    countUnsubscribesBetween(yesterdayStart, yesterdayEnd),
     countUnsubscribesSince(monthStart),
     countUnsubscribesSince(new Date(0)),
     prisma.subscription.count({ where: { status: { in: ["trial", "active"] } } }),
     prisma.subscription.count({ where: { status: "trial" } }),
     prisma.story.count({ where: { sentAt: { gte: todayStart } } }),
+    countStoriesSentBetween(yesterdayStart, yesterdayEnd),
     prisma.siteReview.findMany({
       orderBy: { createdAt: "desc" },
       take: 20,
@@ -214,14 +296,17 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     prisma.user.count(),
     prisma.user.count({ where: { subscription: null } }),
     countPaymentsSince(todayStart),
+    countPaymentsBetween(yesterdayStart, yesterdayEnd),
     countPaymentsSince(monthStart),
     countPaymentsSince(new Date(0)),
     countEventsSince(ANALYTICS_EVENTS.PAYFAST_PAYMENT_COMPLETE, todayStart),
+    countEventsBetween(ANALYTICS_EVENTS.PAYFAST_PAYMENT_COMPLETE, yesterdayStart, yesterdayEnd),
     countEventsSince(ANALYTICS_EVENTS.PAYFAST_PAYMENT_COMPLETE, monthStart),
     countEventsSince(ANALYTICS_EVENTS.PAYFAST_PAYMENT_COMPLETE, new Date(0)),
   ]);
 
   const abandonedToday = Math.max(0, signupSubmitsToday - activationsToday);
+  const abandonedYesterday = Math.max(0, signupSubmitsYesterday - activationsYesterday);
   const abandonedMonth = Math.max(0, signupSubmitsMonth - activationsMonth);
   const abandonedTotal = Math.max(0, signupSubmitsTotal - activationsTotal) + expiredPendingSignups;
 
@@ -254,51 +339,65 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const storage = await getStorageStats();
 
   return {
-    visitors: { today: visitorsToday, monthToDate: visitorsMonth, total: visitorsTotal },
+    visitors: {
+      today: visitorsToday,
+      yesterday: visitorsYesterday,
+      monthToDate: visitorsMonth,
+      total: visitorsTotal,
+    },
     signupStarts: {
       today: signupStartsToday,
+      yesterday: signupStartsYesterday,
       monthToDate: signupStartsMonth,
       total: signupStartsTotal,
     },
     signupSubmits: {
       today: signupSubmitsToday,
+      yesterday: signupSubmitsYesterday,
       monthToDate: signupSubmitsMonth,
       total: signupSubmitsTotal,
     },
     abandonedCheckouts: {
       active: activePendingSignups,
       today: abandonedToday,
+      yesterday: abandonedYesterday,
       monthToDate: abandonedMonth,
       total: abandonedTotal,
     },
     subscriptions: {
       today: subscriptionsToday,
+      yesterday: subscriptionsYesterday,
       monthToDate: subscriptionsMonth,
       total: subscriptionsTotal,
     },
     revenue: {
+      today: revenueToday,
       yesterday: revenueYesterday,
       monthToDate: revenueMonth,
       total: revenueTotal,
     },
     unsubscribes: {
       today: unsubscribesToday,
+      yesterday: unsubscribesYesterday,
       monthToDate: unsubscribesMonth,
       total: unsubscribesTotal,
     },
     activeSubscribers,
     trialSubscribers,
     storiesSentToday,
+    storiesSentYesterday,
     conversionRate,
     totalAccounts,
     accountsMissingSubscription,
     payfastPayments: {
       today: payfastPaymentsToday,
+      yesterday: payfastPaymentsYesterday,
       monthToDate: payfastPaymentsMonth,
       total: payfastPaymentsTotal,
     },
     payfastCheckouts: {
       today: payfastCheckoutsToday,
+      yesterday: payfastCheckoutsYesterday,
       monthToDate: payfastCheckoutsMonth,
       total: payfastCheckoutsTotal,
     },
