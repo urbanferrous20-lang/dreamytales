@@ -32,6 +32,7 @@ const EMPTY_CHILD: ChildProfileInput = {
   age: 5,
   pronouns: "they/them",
   interests: [],
+  otherInterests: "",
   favoriteColors: "",
   province: "Gauteng",
   cityOrTown: "Johannesburg",
@@ -425,6 +426,19 @@ function ChildForm({
               {interest}
             </button>
           ))}
+        </div>
+        <div className="mt-3">
+          <label className="block text-sm text-navy/70 mb-1">
+            Anything else they love? <span className="text-navy/40">(optional)</span>
+          </label>
+          <input
+            type="text"
+            value={child.otherInterests ?? ""}
+            onChange={(e) => onChange({ otherInterests: e.target.value })}
+            placeholder="e.g. horses, baking, Minecraft — separate with commas"
+            className="w-full border border-navy/20 rounded-xl px-4 py-3 text-navy placeholder:text-navy/40"
+            maxLength={200}
+          />
         </div>
       </div>
 

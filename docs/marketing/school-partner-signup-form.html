@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dreamy Tales — School Partner Sign-up Form</title>
+  <style>
+    :root {
+      --cream: #faf6f0;
+      --navy: #1e2a4a;
+      --navy-light: #2d3f6b;
+      --gold: #c9a962;
+      --gold-light: #e8d5a3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--navy);
+      background: #e8e4dc;
+      line-height: 1.45;
+    }
+    .page {
+      max-width: 820px;
+      margin: 24px auto;
+      background: var(--cream);
+      box-shadow: 0 8px 40px rgba(30, 42, 74, 0.12);
+    }
+    .header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+      color: white;
+      padding: 36px 40px 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: "✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦";
+      position: absolute;
+      top: 12px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: var(--gold);
+      opacity: 0.35;
+      letter-spacing: 0.6em;
+      font-size: 10px;
+    }
+    .header h1 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.85rem;
+      margin: 0 0 6px;
+      color: var(--gold-light);
+    }
+    .header h1 span { color: white; }
+    .header p {
+      margin: 0;
+      opacity: 0.85;
+      font-size: 0.95rem;
+    }
+    .header .url {
+      margin-top: 14px;
+      font-size: 0.85rem;
+      color: var(--gold);
+    }
+    .body { padding: 32px 40px 40px; }
+    .intro {
+      background: white;
+      border: 1px solid rgba(30, 42, 74, 0.08);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 28px;
+      font-size: 0.92rem;
+    }
+    .intro strong { color: var(--navy); }
+    section { margin-bottom: 28px; }
+    section h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.15rem;
+      color: var(--navy);
+      border-bottom: 2px solid var(--gold);
+      padding-bottom: 6px;
+      margin: 0 0 16px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 24px;
+    }
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .header, .body { padding-left: 20px; padding-right: 20px; }
+    }
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: rgba(30, 42, 74, 0.65);
+      margin-bottom: 4px;
+    }
+    .field { margin-bottom: 14px; }
+    .field.full { grid-column: 1 / -1; }
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      border: none;
+      border-bottom: 1.5px solid rgba(30, 42, 74, 0.25);
+      background: transparent;
+      padding: 8px 4px;
+      font-size: 1rem;
+      color: var(--navy);
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-bottom-color: var(--gold);
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    .checkbox-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 10px 0;
+      font-size: 0.88rem;
+    }
+    .checkbox-row input { margin-top: 3px; flex-shrink: 0; }
+    .hint {
+      font-size: 0.8rem;
+      color: rgba(30, 42, 74, 0.55);
+      margin-top: 4px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(30, 42, 74, 0.1);
+    }
+    button {
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.95rem;
+      border-radius: 999px;
+      padding: 12px 24px;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--navy);
+      color: var(--cream);
+    }
+    .btn-secondary {
+      background: var(--gold);
+      color: var(--navy);
+    }
+    .footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.7);
+      text-align: center;
+      padding: 16px;
+      font-size: 0.8rem;
+    }
+    .footer a { color: var(--gold); }
+    @media print {
+      body { background: white; }
+      .page { box-shadow: none; margin: 0; max-width: none; }
+      .actions { display: none; }
+      input, select, textarea { border-bottom: 1px solid #999; }
+    }
+  </style>
+</head>
+<body>
+  <form id="partner-form" class="page" onsubmit="return submitForm(event)">
+    <header class="header">
+      <h1><span>School Partner</span> Sign-up Form</h1>
+      <p>Join the Dreamy Tales affiliate programme — earn R5 per parent signup</p>
+      <p class="url">dreamytales.co.za</p>
+    </header>
+
+    <div class="body">
+      <div class="intro">
+        <strong>Programme summary:</strong> Share your unique Dreamy Tales link with parents.
+        When a parent completes their <strong>first paid month</strong> (after the 7-day free trial),
+        your school earns <strong>R5</strong>. Payouts are made monthly by EFT.
+        Complete all sections below and return to <strong>Admin@dreamytales.co.za</strong>.
+      </div>
+
+      <section>
+        <h2>1. School details</h2>
+        <div class="grid-2">
+          <div class="field full">
+            <label for="schoolName">School name</label>
+            <input type="text" id="schoolName" name="schoolName" required />
+          </div>
+          <div class="field">
+            <label for="schoolType">School type</label>
+            <select id="schoolType" name="schoolType">
+              <option value="">Select…</option>
+              <option>Pre-primary / ECD</option>
+              <option>Primary</option>
+              <option>Combined</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="schoolReg">EMIS / registration no. (optional)</label>
+            <input type="text" id="schoolReg" name="schoolReg" />
+          </div>
+          <div class="field">
+            <label for="province">Province</label>
+            <input type="text" id="province" name="province" placeholder="e.g. Gauteng" />
+          </div>
+          <div class="field">
+            <label for="city">City / town</label>
+            <input type="text" id="city" name="city" />
+          </div>
+          <div class="field full">
+            <label for="address">Physical address</label>
+            <input type="text" id="address" name="address" />
+          </div>
+          <div class="field">
+            <label for="parentEstimate">Approx. number of families (optional)</label>
+            <input type="number" id="parentEstimate" name="parentEstimate" min="0" placeholder="e.g. 200" />
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>2. Contact person</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="contactName">Full name</label>
+            <input type="text" id="contactName" name="contactName" required />
+          </div>
+          <div class="field">
+            <label for="contactRole">Role / title</label>
+            <input type="text" id="contactRole" name="contactRole" placeholder="e.g. Principal, HOD, SGB Treasurer" />
+          </div>
+          <div class="field">
+            <label for="contactEmail">Email</label>
+            <input type="email" id="contactEmail" name="contactEmail" required />
+          </div>
+          <div class="field">
+            <label for="contactPhone">Phone / WhatsApp</label>
+            <input type="tel" id="contactPhone" name="contactPhone" required />
+          </div>
+          <div class="field full">
+            <label for="contactAlt">Alternative contact (optional)</label>
+            <input type="text" id="contactAlt" name="contactAlt" placeholder="Name, email or phone" />
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>3. Bank details (monthly EFT payouts)</h2>
+        <p class="hint" style="margin-top: -8px; margin-bottom: 14px;">
+          Payments are made to the school or designated SGB account. All details are kept confidential (POPIA).
+        </p>
+        <div class="grid-2">
+          <div class="field full">
+            <label for="accountHolder">Account holder name (as on bank statement)</label>
+            <input type="text" id="accountHolder" name="accountHolder" required />
+          </div>
+          <div class="field">
+            <label for="bankName">Bank name</label>
+            <input type="text" id="bankName" name="bankName" placeholder="e.g. FNB, Standard Bank" required />
+          </div>
+          <div class="field">
+            <label for="accountType">Account type</label>
+            <select id="accountType" name="accountType" required>
+              <option value="">Select…</option>
+              <option>Cheque / Current</option>
+              <option>Savings</option>
+              <option>Transmission</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="branchCode">Branch code</label>
+            <input type="text" id="branchCode" name="branchCode" required />
+          </div>
+          <div class="field">
+            <label for="accountNumber">Account number</label>
+            <input type="text" id="accountNumber" name="accountNumber" required />
+          </div>
+          <div class="field">
+            <label for="paymentReference">Preferred payment reference on EFT</label>
+            <input type="text" id="paymentReference" name="paymentReference" placeholder="e.g. School name + Dreamy Tales" />
+          </div>
+          <div class="field">
+            <label for="vatNumber">VAT number (optional — if you require a tax invoice)</label>
+            <input type="text" id="vatNumber" name="vatNumber" />
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>4. Promotion & agreement</h2>
+        <div class="field full">
+          <label for="promotionPlan">How will you share Dreamy Tales with parents?</label>
+          <textarea id="promotionPlan" name="promotionPlan" placeholder="e.g. WhatsApp parent group, monthly newsletter, notice at pickup…"></textarea>
+        </div>
+        <div class="field">
+          <label for="preferredCode">Preferred link name (optional)</label>
+          <input type="text" id="preferredCode" name="preferredCode" placeholder="e.g. springs-primary" />
+          <p class="hint">Lowercase letters and hyphens only. We’ll confirm availability.</p>
+        </div>
+        <div class="field">
+          <label for="signedDate">Date</label>
+          <input type="date" id="signedDate" name="signedDate" required />
+        </div>
+        <div class="field">
+          <label for="signedName">Authorised signatory (print name)</label>
+          <input type="text" id="signedName" name="signedName" required placeholder="Principal or authorised representative" />
+        </div>
+
+        <div class="checkbox-row">
+          <input type="checkbox" id="agreeTerms" name="agreeTerms" required />
+          <label for="agreeTerms" style="text-transform: none; font-weight: normal; font-size: 0.88rem;">
+            I confirm that I am authorised to enter this partnership on behalf of the school,
+            that the bank details provided are correct, and that I agree to the programme terms
+            (R5 per first paid parent subscription, monthly EFT, link sharing only — no misleading claims).
+          </label>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="agreePopia" name="agreePopia" required />
+          <label for="agreePopia" style="text-transform: none; font-weight: normal; font-size: 0.88rem;">
+            I consent to Dreamy Tales storing the information on this form for partner administration
+            and payment purposes in line with POPIA.
+          </label>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button type="button" class="btn-secondary" onclick="window.print()">Print / Save as PDF</button>
+        <button type="submit" class="btn-primary">Email completed form</button>
+      </div>
+      <p class="hint">
+        <strong>To submit:</strong> Click “Email completed form” (opens your email app with the details),
+        or Print → Save as PDF and attach to an email to Admin@dreamytales.co.za.
+      </p>
+    </div>
+
+    <footer class="footer">
+      Dreamy Tales · Bedtime stories delivered nightly at 6pm SAST · <a href="https://dreamytales.co.za">dreamytales.co.za</a>
+    </footer>
+  </form>
+
+  <script>
+    document.getElementById("signedDate").valueAsDate = new Date();
+
+    function submitForm(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = new FormData(form);
+      const lines = [];
+      for (const [key, value] of data.entries()) {
+        if (key.startsWith("agree")) continue;
+        lines.push(key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase()) + ": " + value);
+      }
+      lines.push("Agreed to terms: Yes");
+      lines.push("POPIA consent: Yes");
+      const subject = encodeURIComponent("School Partner Sign-up — " + (data.get("schoolName") || "New school"));
+      const body = encodeURIComponent(
+        "Please find our completed Dreamy Tales School Partner sign-up form below.\n\n" +
+        lines.join("\n") +
+        "\n\n(Please attach a PDF if you printed the form.)\n"
+      );
+      window.location.href = "mailto:Admin@dreamytales.co.za?subject=" + subject + "&body=" + body;
+      return false;
+    }
+  </script>
+</body>
+</html>

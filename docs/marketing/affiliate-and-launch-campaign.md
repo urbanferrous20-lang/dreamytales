@@ -43,6 +43,10 @@ Or skip Canva: use the finished PNG and put the link **in the post caption** bel
 
 ### Recruit schools — suggested DM/email
 
+Full introductory email + short follow-up: see [`school-affiliate-intro-email.md`](school-affiliate-intro-email.md)
+
+**Sign-up form (schools return by email):** open [`school-partner-signup-form.html`](school-partner-signup-form.html) in a browser — fill in, then **Print → Save as PDF** or click **Email completed form**.
+
 **Subject:** Partner with Dreamy Tales — earn R5 per signup
 
 ```

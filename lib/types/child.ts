@@ -36,12 +36,33 @@ const birthDateField = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date of birth (YYYY-MM-DD)");
 
+export function parseOtherInterests(raw?: string | null): string[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .split(/[,;]+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0 && part.length <= 40)
+    .slice(0, 5);
+}
+
+/** Merge chip picks with free-text interests; dedupe case-insensitively. */
+export function mergeChildInterests(interests: string[], otherInterests?: string | null): string[] {
+  const merged = [...interests];
+  for (const custom of parseOtherInterests(otherInterests)) {
+    if (!merged.some((item) => item.toLowerCase() === custom.toLowerCase())) {
+      merged.push(custom);
+    }
+  }
+  return merged;
+}
+
 export const childProfileSchema = z
   .object({
     name: z.string().min(1, "Name is required").max(50),
     birthDate: birthDateField,
     pronouns: z.enum(["he/him", "she/her", "they/them"]),
     interests: z.array(z.string()).min(1, "Pick at least one interest"),
+    otherInterests: z.string().max(200).optional(),
     favoriteColors: z.string().min(1, "Pick a favourite colour"),
     favoriteToy: z.string().optional(),
     petInfo: z.string().optional(),
@@ -82,6 +103,7 @@ export const childProfileSchema = z
   .transform((data) => ({
     ...data,
     age: clampStoryAge(ageFromBirthDate(parseBirthDate(data.birthDate)!)),
+    interests: mergeChildInterests(data.interests, data.otherInterests),
   }));
 
 export type ChildProfileInput = z.infer<typeof childProfileSchema>;
@@ -107,7 +129,7 @@ export function getWordBudget(age: number): { min: number; max: number; perPage:
   return { min: 1000, max: 1500, perPage: 120 };
 }
 
-export function childProfileToPromptContext(child: ChildProfileInput): string {
+export function childProfileCoreContext(child: ChildProfileInput): string {
   const city =
     child.cityOrTown === "Other" && child.customCity?.trim()
       ? child.customCity.trim()
@@ -119,20 +141,34 @@ export function childProfileToPromptContext(child: ChildProfileInput): string {
     `Pronouns: ${child.pronouns}`,
     `Location: ${formatSaLocation(child.province, city, child.suburb)}`,
     getHomeBaseGuidance(child.province, city),
-    `Interests: ${child.interests.join(", ")}`,
     `Favourite colours: ${child.favoriteColors}`,
+    child.topicsToAvoid ? `Avoid: ${child.topicsToAvoid}` : null,
+    `Mood: ${child.storyMood}`,
+    `Story language: ${getLanguageLabel(child.language)} — ${getStoryLanguageInstruction(child.language)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/** Parent signup extras — for character bible and rare background garnish, not nightly plot drivers. */
+export function childProfileSignupExtras(child: ChildProfileInput): string {
+  return [
+    child.interests.length ? `Interests noted at signup: ${child.interests.join(", ")}` : null,
     child.favoriteToy ? `Favourite toy: ${child.favoriteToy}` : null,
     child.petInfo ? `Pet: ${child.petInfo}` : null,
     child.siblingNames ? `Siblings: ${child.siblingNames}` : null,
     child.bestFriend ? `Best friend: ${child.bestFriend}` : null,
     child.favoritePlace ? `Favourite place at home: ${child.favoritePlace}` : null,
-    child.topicsToAvoid ? `Avoid: ${child.topicsToAvoid}` : null,
-    `Mood: ${child.storyMood}`,
-    child.moralTheme ? `Moral theme: ${child.moralTheme}` : null,
-    `Story language: ${getLanguageLabel(child.language)} — ${getStoryLanguageInstruction(child.language)}`,
+    child.moralTheme ? `Moral theme preference: ${child.moralTheme}` : null,
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+export function childProfileToPromptContext(child: ChildProfileInput): string {
+  const core = childProfileCoreContext(child);
+  const extras = childProfileSignupExtras(child);
+  return extras ? `${core}\n${extras}` : core;
 }
 
 export function getResolvedCity(child: ChildProfileInput): string {

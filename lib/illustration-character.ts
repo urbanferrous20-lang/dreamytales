@@ -1,5 +1,6 @@
 import type { ChildProfileInput } from "@/lib/types/child";
 import { getIllustrationContentPolicy } from "@/lib/story-content-policy";
+import { formatIllustrationPetBlock } from "@/lib/pet-illustration";
 
 export type IllustrationCharacterBible = {
   protagonist: string;
@@ -50,19 +51,33 @@ export function buildSceneIllustrationPrompt(params: {
   characterBlock: string;
   illustrationStyle: string;
   locationHint?: string;
+  petInfo?: string | null;
+  petInScene?: boolean;
 }): string {
-  return [
+  const lines = [
     "Children's bedtime short storybook illustration — one scene from a picture book.",
     getIllustrationContentPolicy(),
-    `CRITICAL: The attached reference image is ${params.childName}. Match that character EXACTLY.`,
+    `CRITICAL: The first attached reference image is ${params.childName}. Match that character EXACTLY.`,
     "Keep IDENTICAL across every page: face, eyes, nose, mouth, hairstyle, hair colour, skin tone, body proportions, and default pajamas/outfit.",
     "Change ONLY: pose, expression, camera angle, background, and scene action.",
+  ];
+
+  if (params.petInScene && params.petInfo?.trim()) {
+    lines.push(
+      "CRITICAL: The second attached reference image is the family's signup pet. Match that pet EXACTLY.",
+      formatIllustrationPetBlock(params.petInfo.trim())
+    );
+  }
+
+  lines.push(
     params.illustrationStyle,
     "Soft flat digital art, muted warm palette, calming bedtime mood.",
     "No text, no words, no letters in the image.",
     params.locationHint ? `South African setting: ${params.locationHint}` : "South African setting.",
     params.characterBlock,
     `Scene: ${params.description}`,
-    `Mood: ${params.mood}`,
-  ].join(" ");
+    `Mood: ${params.mood}`
+  );
+
+  return lines.join(" ");
 }

@@ -61,6 +61,8 @@ async function prepareChildForStory(child: ActiveChild): Promise<{
     language?: string;
     characterBible?: string | null;
     styleAnchorUrl?: string | null;
+    petAnchorUrl?: string | null;
+    petAnchorSource?: string | null;
   } = {};
 
   if (childInput.age !== child.age) {
@@ -81,6 +83,15 @@ async function prepareChildForStory(child: ActiveChild): Promise<{
   if (previousBand !== newBand) {
     data.characterBible = null;
     data.styleAnchorUrl = null;
+    data.petAnchorUrl = null;
+    data.petAnchorSource = null;
+  }
+
+  const storedPetSource = child.petAnchorSource?.trim() ?? "";
+  const currentPetInfo = childInput.petInfo?.trim() ?? "";
+  if (storedPetSource && storedPetSource !== currentPetInfo) {
+    data.petAnchorUrl = null;
+    data.petAnchorSource = null;
   }
 
   if (Object.keys(data).length > 0) {
@@ -91,6 +102,11 @@ async function prepareChildForStory(child: ActiveChild): Promise<{
     if (data.characterBible === null) {
       child.characterBible = null;
       child.styleAnchorUrl = null;
+      child.petAnchorUrl = null;
+      child.petAnchorSource = null;
+    } else if (data.petAnchorUrl === null && data.petAnchorSource === null) {
+      child.petAnchorUrl = null;
+      child.petAnchorSource = null;
     }
   }
 
@@ -143,6 +159,7 @@ export async function processNightlyStoryForChild(
       summary: s.summary,
       settingKey: s.settingKey,
       archetypeKey: (s as { archetypeKey?: string | null }).archetypeKey,
+      inspirationKey: (s as { inspirationKey?: string | null }).inspirationKey,
     }));
     const recentSettingKeys = child.stories
       .map((s) => s.settingKey)
@@ -165,6 +182,7 @@ export async function processNightlyStoryForChild(
     let setting;
     let archetypeLabel: string | undefined;
     let archetypeKey: string | undefined;
+    let inspirationKey: string | undefined;
 
     if (isBirthday) {
       const birthdayResult = await generateBirthdayStory({
@@ -187,6 +205,7 @@ export async function processNightlyStoryForChild(
       setting = nightlyResult.setting;
       archetypeKey = nightlyResult.archetype.key;
       archetypeLabel = nightlyResult.archetype.label;
+      inspirationKey = nightlyResult.inspiration.key;
     }
 
     const illustrationResult = await generatePageIllustrations(
@@ -195,13 +214,29 @@ export async function processNightlyStoryForChild(
       characterBible,
       story.pages,
       setting,
-      child.styleAnchorUrl
+      child.styleAnchorUrl,
+      child.petAnchorUrl,
+      child.petAnchorSource
     );
 
+    const anchorUpdates: {
+      styleAnchorUrl?: string;
+      petAnchorUrl?: string | null;
+      petAnchorSource?: string | null;
+    } = {};
+
     if (illustrationResult.styleAnchorPath) {
+      anchorUpdates.styleAnchorUrl = illustrationResult.styleAnchorPath;
+    }
+    if (illustrationResult.petAnchorPath) {
+      anchorUpdates.petAnchorUrl = illustrationResult.petAnchorPath;
+      anchorUpdates.petAnchorSource = illustrationResult.petAnchorSource ?? null;
+    }
+
+    if (Object.keys(anchorUpdates).length > 0) {
       await prisma.childProfile.update({
         where: { id: child.id },
-        data: { styleAnchorUrl: illustrationResult.styleAnchorPath },
+        data: anchorUpdates,
       });
     }
 
@@ -224,6 +259,7 @@ export async function processNightlyStoryForChild(
         summary: story.summary,
         settingKey: setting.key,
         archetypeKey: archetypeKey ?? null,
+        inspirationKey: inspirationKey ?? null,
         isBirthdayStory: isBirthday,
         pdfPath,
         storyDate,
@@ -233,6 +269,7 @@ export async function processNightlyStoryForChild(
         summary: story.summary,
         settingKey: setting.key,
         archetypeKey: archetypeKey ?? null,
+        inspirationKey: inspirationKey ?? null,
         isBirthdayStory: isBirthday,
         pdfPath,
       },

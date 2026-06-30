@@ -77,6 +77,8 @@ model ChildProfile {
   language       String   @default("english")
   characterBible String?  @db.Text
   styleAnchorUrl String?
+  petAnchorUrl   String?
+  petAnchorSource String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   stories        Story[]
@@ -107,6 +109,7 @@ model Story {
   summary   String   @db.Text
   settingKey String?
   archetypeKey String?
+  inspirationKey String?
   isBirthdayStory Boolean @default(false)
   pdfPath   String
   storyDate DateTime

@@ -3,13 +3,16 @@ import { deepseekJson } from "@/lib/ai/deepseek";
 import {
   generateIllustrationFromReference,
   ensureCharacterAnchor,
+  ensurePetAnchor,
 } from "@/lib/ai/openai";
 import {
   buildSceneIllustrationPrompt,
   formatIllustrationCharacterBlock,
 } from "@/lib/illustration-character";
+import { sceneIncludesSignupPet } from "@/lib/pet-illustration";
 import { saveImage } from "@/lib/pdf-builder";
 import {
+  childProfileCoreContext,
   childProfileToPromptContext,
   getWordBudget,
   getResolvedCity,
@@ -20,9 +23,11 @@ import { buildStorySystemPrompt, resolveStoryLanguage } from "@/lib/sa-languages
 import { formatTopicsToAvoid, getIllustrationContentPolicy, getStoryFantasyPolicy } from "@/lib/story-content-policy";
 import { formatStorySettingPrompt, getBirthdayStorySetting, pickStorySetting, type StorySetting } from "@/lib/story-settings";
 import { formatArchetypePrompt, pickStoryArchetype, type StoryArchetype } from "@/lib/story-archetypes";
+import { formatInspirationPrompt, pickStoryInspiration, type StoryInspiration } from "@/lib/story-inspiration";
 import {
+  formatProfileGarnishPrompt,
   formatRecentStoryAvoidance,
-  pickFocusInterest,
+  pickOptionalProfileGarnish,
   STORY_GENERATION_TEMPERATURE,
   type RecentStoryHint,
 } from "@/lib/story-variation";
@@ -82,7 +87,7 @@ export async function generateNightlyStory(params: {
   recentStories: RecentStoryHint[];
   recentSettingKeys: string[];
   setting?: StorySetting;
-}): Promise<{ story: GeneratedStory; setting: StorySetting; archetype: StoryArchetype }> {
+}): Promise<{ story: GeneratedStory; setting: StorySetting; archetype: StoryArchetype; inspiration: StoryInspiration }> {
   const setting =
     params.setting ??
     pickStorySetting({
@@ -96,7 +101,13 @@ export async function generateNightlyStory(params: {
       .map((s) => s.archetypeKey)
       .filter((key): key is string => Boolean(key)),
   });
-  const focusInterest = pickFocusInterest(params.child.interests, params.storyNumber);
+  const inspiration = pickStoryInspiration({
+    storyNumber: params.storyNumber,
+    recentInspirationKeys: params.recentStories
+      .map((s) => s.inspirationKey)
+      .filter((key): key is string => Boolean(key)),
+  });
+  const garnish = pickOptionalProfileGarnish(params.child, params.storyNumber);
 
   const languageId = resolveStoryLanguage(params.child.language);
   const budget = getWordBudget(params.child.age);
@@ -104,6 +115,8 @@ export async function generateNightlyStory(params: {
   const avoidLine = formatTopicsToAvoid(params.child.topicsToAvoid);
   const settingPrompt = formatStorySettingPrompt(setting, params.child);
   const archetypePrompt = formatArchetypePrompt(archetype);
+  const inspirationPrompt = formatInspirationPrompt(inspiration);
+  const garnishPrompt = formatProfileGarnishPrompt(garnish);
   const recentAvoidance = formatRecentStoryAvoidance(params.recentStories);
 
   const story = await deepseekJson<GeneratedStory>(
@@ -115,11 +128,11 @@ export async function generateNightlyStory(params: {
 
 Word budget: ${budget.min}-${budget.max} total words (child is ${params.child.age} years old).
 Character bible: ${JSON.stringify(params.characterBible)}
-Child: ${childProfileToPromptContext(params.child)}
+Child (identity & home — use every night): ${childProfileCoreContext(params.child)}
 ${settingPrompt}
 ${archetypePrompt}
-TONIGHT'S SPOTLIGHT INTEREST: "${focusInterest}" — make this interest the heart of tonight's plot. Other interests may appear lightly or not at all.
-Story mood preference from parent: ${params.child.storyMood}${params.child.moralTheme ? `. Optional moral theme: ${params.child.moralTheme}` : ""}.
+${inspirationPrompt}
+${garnishPrompt}
 ${recentAvoidance}
 ${avoidLine ? `${avoidLine}\n` : ""}
 ${getStoryFantasyPolicy(params.child.age)}
@@ -134,7 +147,7 @@ Re-check every page against the content, safety, and fantasy rules before respon
     { temperature: STORY_GENERATION_TEMPERATURE }
   );
 
-  return { story, setting, archetype };
+  return { story, setting, archetype, inspiration };
 }
 
 export async function generateBirthdayStory(params: {
@@ -184,8 +197,15 @@ export async function generatePageIllustrations(
   characterBible: CharacterBible,
   pages: GeneratedStory["pages"],
   setting: StorySetting,
-  styleAnchorPath?: string | null
-): Promise<{ imagePaths: Map<number, string>; styleAnchorPath?: string }> {
+  styleAnchorPath?: string | null,
+  petAnchorPath?: string | null,
+  petAnchorSource?: string | null
+): Promise<{
+  imagePaths: Map<number, string>;
+  styleAnchorPath?: string;
+  petAnchorPath?: string;
+  petAnchorSource?: string;
+}> {
   const imagePaths = new Map<number, string>();
   const anchor = await ensureCharacterAnchor({
     childId,
@@ -193,11 +213,26 @@ export async function generatePageIllustrations(
     characterBible,
     existingAnchorPath: styleAnchorPath,
   });
+  const petAnchor = child.petInfo
+    ? await ensurePetAnchor({
+        childId,
+        petInfo: child.petInfo,
+        illustrationStyle: characterBible.illustrationStyle,
+        existingAnchorPath: petAnchorPath,
+        existingAnchorSource: petAnchorSource,
+      })
+    : null;
   const characterBlock = formatIllustrationCharacterBlock(child, characterBible);
   const homeHint = formatSaLocation(child.province, getResolvedCity(child), child.suburb);
   const locationHint = `${setting.label}: ${setting.prompt.slice(0, 120)}. Home: ${homeHint}`;
 
   for (const page of pages) {
+    const petInScene = sceneIncludesSignupPet({
+      sceneDescription: page.sceneDescription,
+      pageText: page.text,
+      petInfo: child.petInfo,
+    });
+
     const prompt = buildSceneIllustrationPrompt({
       childName: child.name,
       description: page.sceneDescription,
@@ -205,9 +240,14 @@ export async function generatePageIllustrations(
       characterBlock,
       illustrationStyle: characterBible.illustrationStyle,
       locationHint,
+      petInfo: child.petInfo,
+      petInScene,
     });
 
-    const buffer = await generateIllustrationFromReference(prompt, anchor.buffer);
+    const references =
+      petInScene && petAnchor ? [anchor.buffer, petAnchor.buffer] : anchor.buffer;
+
+    const buffer = await generateIllustrationFromReference(prompt, references);
     const imagePath = await saveImage(childId, `page-${page.pageNumber}.jpg`, buffer);
     imagePaths.set(page.pageNumber, imagePath);
   }
@@ -215,6 +255,9 @@ export async function generatePageIllustrations(
   return {
     imagePaths,
     ...(anchor.created || !styleAnchorPath ? { styleAnchorPath: anchor.path } : {}),
+    ...(petAnchor && (petAnchor.created || !petAnchorPath)
+      ? { petAnchorPath: petAnchor.path, petAnchorSource: petAnchor.source }
+      : {}),
   };
 }
 

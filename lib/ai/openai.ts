@@ -6,6 +6,7 @@ import {
   CHARACTER_ANCHOR_FILENAME,
   type IllustrationCharacterBible,
 } from "@/lib/illustration-character";
+import { buildPetAnchorPrompt, PET_ANCHOR_FILENAME } from "@/lib/pet-illustration";
 import {
   ILLUSTRATION_OPENAI_QUALITY,
   ILLUSTRATION_OPENAI_SIZE,
@@ -42,20 +43,27 @@ export async function generateIllustration(prompt: string): Promise<Buffer> {
   return optimizeIllustration(raw);
 }
 
-/** Generate a scene using the child's anchor image so they look the same on every page. */
+/** Generate a scene using reference image(s) so characters stay consistent. */
 export async function generateIllustrationFromReference(
   prompt: string,
-  referenceImage: Buffer
+  referenceImages: Buffer | Buffer[]
 ): Promise<Buffer> {
   const openai = getClient();
-  const imageFile = await toFile(referenceImage, CHARACTER_ANCHOR_FILENAME, {
-    type: "image/jpeg",
-  });
+  const images = Array.isArray(referenceImages) ? referenceImages : [referenceImages];
+  const imageFiles = await Promise.all(
+    images.map((buffer, index) =>
+      toFile(
+        buffer,
+        index === 0 ? CHARACTER_ANCHOR_FILENAME : PET_ANCHOR_FILENAME,
+        { type: "image/jpeg" }
+      )
+    )
+  );
 
   try {
     const response = await openai.images.edit({
       model: "gpt-image-1-mini",
-      image: imageFile,
+      image: imageFiles.length === 1 ? imageFiles[0]! : imageFiles,
       prompt,
       size: ILLUSTRATION_OPENAI_SIZE,
       quality: ILLUSTRATION_OPENAI_QUALITY,
@@ -92,6 +100,39 @@ export async function ensureCharacterAnchor(params: {
   const buffer = await generateIllustration(prompt);
   const filePath = await saveImage(params.childId, CHARACTER_ANCHOR_FILENAME, buffer);
   return { path: filePath, buffer, created: true };
+}
+
+export async function ensurePetAnchor(params: {
+  childId: string;
+  petInfo: string;
+  illustrationStyle: string;
+  existingAnchorPath?: string | null;
+  existingAnchorSource?: string | null;
+}): Promise<{ path: string; buffer: Buffer; created: boolean; source: string } | null> {
+  const petInfo = params.petInfo.trim();
+  if (!petInfo) return null;
+
+  const sourceMatches =
+    params.existingAnchorSource?.trim() === petInfo && params.existingAnchorPath;
+
+  if (sourceMatches && params.existingAnchorPath) {
+    try {
+      const buffer = await fs.readFile(params.existingAnchorPath);
+      return {
+        path: params.existingAnchorPath,
+        buffer,
+        created: false,
+        source: petInfo,
+      };
+    } catch {
+      // Missing on disk — regenerate below.
+    }
+  }
+
+  const prompt = buildPetAnchorPrompt(petInfo, params.illustrationStyle);
+  const buffer = await generateIllustration(prompt);
+  const filePath = await saveImage(params.childId, PET_ANCHOR_FILENAME, buffer);
+  return { path: filePath, buffer, created: true, source: petInfo };
 }
 
 /** @deprecated Use buildSceneIllustrationPrompt from illustration-character.ts */

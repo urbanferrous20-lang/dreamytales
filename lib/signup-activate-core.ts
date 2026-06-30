@@ -2,7 +2,7 @@ import { ANALYTICS_EVENTS } from "@/lib/analytics-events";
 import { addDays } from "@/lib/dates";
 import { prisma } from "@/lib/db";
 import { recurringCharge, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
-import { childProfileSchema, type ChildProfileInput } from "@/lib/types/child";
+import { childProfileSchema, mergeChildInterests, type ChildProfileInput } from "@/lib/types/child";
 import type { User } from "@prisma/client";
 import { parseBirthDate, estimateBirthDateFromAge, getEffectiveAge } from "@/lib/child-age";
 import { resolveStoryLanguage } from "@/lib/sa-languages";
@@ -61,9 +61,10 @@ function parseStoredChildren(childrenJson: string): ChildProfileInput[] | null {
           })(),
         age,
         pronouns: (child.pronouns as ChildProfileInput["pronouns"]) ?? "they/them",
-        interests: Array.isArray(child.interests)
-          ? child.interests.map(String)
-          : ["nature"],
+        interests: mergeChildInterests(
+          Array.isArray(child.interests) ? child.interests.map(String) : ["nature"],
+          typeof child.otherInterests === "string" ? child.otherInterests : undefined
+        ),
         favoriteColors: String(child.favoriteColors ?? "Blue"),
         favoriteToy: child.favoriteToy ? String(child.favoriteToy) : undefined,
         petInfo: child.petInfo ? String(child.petInfo) : undefined,
