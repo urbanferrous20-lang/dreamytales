@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { AffiliateMonthlyRow } from "@/lib/affiliate";
+import type { AffiliateConversionDisplay, AffiliateMonthlyRow } from "@/lib/affiliate-types";
 import { formatZar } from "@/lib/pricing";
 import { slugifyAffiliateCode } from "@/lib/affiliate-client";
 
@@ -20,15 +20,10 @@ type PartnerRow = {
   shortUrl: string;
 };
 
-type ConversionDisplay = Omit<AffiliateConversionRow, "convertedAt" | "paidAt"> & {
-  convertedAt: string;
-  paidAt: string | null;
-};
-
 type AffiliateAdminPanelProps = {
   month: string;
   report: AffiliateMonthlyRow[];
-  conversions: ConversionDisplay[];
+  conversions: AffiliateConversionDisplay[];
   partners: PartnerRow[];
 };
 

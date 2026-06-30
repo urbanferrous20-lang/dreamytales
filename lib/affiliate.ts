@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { getSiteUrl } from "@/lib/site";
-import { normalizeAffiliateCode, slugifyAffiliateCode } from "@/lib/affiliate-client";
+import { normalizeAffiliateCode } from "@/lib/affiliate-client";
 
 export { normalizeAffiliateCode };
 
@@ -78,16 +78,9 @@ export async function recordAffiliateConversionOnPaidPayment(params: {
   }
 }
 
-export type AffiliateMonthlyRow = {
-  partnerId: string;
-  code: string;
-  name: string;
-  contactEmail: string | null;
-  conversions: number;
-  commissionTotal: number;
-  pendingTotal: number;
-  paidTotal: number;
-};
+import type { AffiliateConversionRow, AffiliateMonthlyRow } from "@/lib/affiliate-types";
+
+export type { AffiliateConversionRow, AffiliateMonthlyRow } from "@/lib/affiliate-types";
 
 export async function getAffiliateMonthlyReport(month: string): Promise<AffiliateMonthlyRow[]> {
   const [year, monthNum] = month.split("-").map(Number);
@@ -138,18 +131,6 @@ export async function getAffiliateMonthlyReport(month: string): Promise<Affiliat
 
   return [...byPartner.values()].sort((a, b) => b.commissionTotal - a.commissionTotal);
 }
-
-export type AffiliateConversionRow = {
-  id: string;
-  partnerName: string;
-  partnerCode: string;
-  parentEmail: string;
-  parentName: string;
-  commissionAmount: number;
-  convertedAt: Date;
-  payoutStatus: string;
-  paidAt: Date | null;
-};
 
 export async function getAffiliateConversionsForMonth(month: string): Promise<AffiliateConversionRow[]> {
   const [year, monthNum] = month.split("-").map(Number);
