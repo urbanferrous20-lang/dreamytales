@@ -30,7 +30,8 @@ type StorySlot = {
   generationStartedAt: Date | null;
 };
 
-function isStoryGenerationInProgress(story: StorySlot): boolean {
+function isStoryGenerationInProgress(story: StorySlot | null): boolean {
+  if (!story) return false;
   if (story.sentAt) return false;
   if (!story.generationStartedAt) return false;
   return Date.now() - story.generationStartedAt.getTime() < GENERATION_STALE_MS;
