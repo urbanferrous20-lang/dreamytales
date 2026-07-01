@@ -4,8 +4,8 @@ import { HeroStoryPreview, SampleStoryShowcase } from "@/components/SampleStoryS
 import { PublicReviews } from "@/components/PublicReviews";
 import {
   ADDON_CHILD_ZAR,
+  BASE_AUDIO_MONTHLY_ZAR,
   BASE_MONTHLY_ZAR,
-  annualSavings,
   annualTotal,
   formatZar,
   monthlyTotal,
@@ -35,26 +35,18 @@ const MEMES = [
   {
     emoji: "📚",
     text: "Finally, a bedtime short story that isn't the same dinosaur book for the 400th time.",
-    bg: "from-coral/20 via-peach/30 to-sunset/20",
-    accent: "bg-coral",
   },
   {
     emoji: "😴",
     text: "You: 'One more story.' Us: 'Here's 30. You're welcome.'",
-    bg: "from-sky/25 via-mint/20 to-sky/10",
-    accent: "bg-sky",
   },
   {
     emoji: "⏰",
     text: "6pm sharp. Story in your inbox. No hunting for the lost bookmark.",
-    bg: "from-purple/25 via-lavender to-rose/15",
-    accent: "bg-purple",
   },
   {
     emoji: "🎨",
     text: "Custom illustrations. Your child's name. Their favourite things. Not generic fluff.",
-    bg: "from-gold-light/40 via-peach/25 to-coral/15",
-    accent: "bg-sunset",
   },
 ];
 
@@ -63,30 +55,23 @@ const STEPS = [
     step: "1",
     title: "Tell us about your child",
     desc: `Name, age, interests, hometown, and story language — ${STORY_LANGUAGE_MARKETING_LABEL}.`,
-    color: "bg-coral",
-    ring: "ring-coral/30",
   },
   {
     step: "2",
     title: "Start your free trial",
     desc: `${TRIAL_DAYS} days free. Card details via PayFast. Cancel anytime with 1 month's notice.`,
-    color: "bg-sky",
-    ring: "ring-sky/30",
   },
   {
     step: "3",
     title: "Stories arrive at 6pm",
     desc: "Every night, a brand-new illustrated PDF lands in your inbox. Ready to read.",
-    color: "bg-mint",
-    ring: "ring-mint/30",
   },
 ];
 
-const HIGHLIGHTS = [
-  { icon: "🌍", label: STORY_LANGUAGE_MARKETING_LABEL, color: "bg-purple/15 text-purple" },
-  { icon: "🌙", label: "Delivered at 6pm", color: "bg-sky/15 text-sky" },
-  { icon: "✨", label: `${TRIAL_DAYS}-day free trial`, color: "bg-gold/20 text-gold" },
-  { icon: "📖", label: "30+ stories/month", color: "bg-coral/15 text-coral" },
+const CREATIVE_FEATURES = [
+  { icon: "🕐", label: "New story every night at 6pm" },
+  { icon: "A", label: STORY_LANGUAGE_MARKETING_LABEL },
+  { icon: "📄", label: "Illustrated PDF to your inbox" },
 ];
 
 export default function HomePage() {
@@ -100,66 +85,77 @@ export default function HomePage() {
           buildFaqJsonLd(),
         ]}
       />
-      {/* Hero */}
+      {/* Hero — launch-creative starry night */}
       <section className="gradient-hero text-cream relative overflow-hidden">
+        <div className="absolute inset-0 stars-bg opacity-60 pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none">
-          <span className="absolute top-16 left-[8%] text-3xl animate-twinkle">✦</span>
+          <span className="absolute top-16 left-[8%] text-3xl animate-twinkle text-gold-light">✦</span>
           <span className="absolute top-28 right-[12%] text-2xl animate-twinkle text-gold-light" style={{ animationDelay: "0.4s" }}>★</span>
-          <span className="absolute top-48 left-[35%] text-xl animate-twinkle text-sky" style={{ animationDelay: "0.8s" }}>✦</span>
-          <span className="absolute bottom-24 right-[25%] text-4xl animate-twinkle" style={{ animationDelay: "1.2s" }}>★</span>
-          <span className="absolute top-32 right-[40%] text-5xl animate-float-slow opacity-30">🌙</span>
-          <span className="absolute bottom-16 left-[15%] text-4xl animate-drift opacity-40">📖</span>
-          <span className="absolute top-20 right-[8%] text-3xl animate-float opacity-50">⭐</span>
-          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-purple/20 blur-3xl" />
-          <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-coral/15 blur-3xl" />
+          <span className="absolute top-48 left-[35%] text-xl animate-twinkle text-cream/50" style={{ animationDelay: "0.8s" }}>✦</span>
+          <span className="absolute bottom-24 right-[25%] text-4xl animate-twinkle text-gold-light" style={{ animationDelay: "1.2s" }}>★</span>
+          <span className="absolute top-32 right-[40%] text-5xl animate-float-slow opacity-20">🌙</span>
+          <span className="absolute bottom-16 left-[15%] text-4xl animate-drift opacity-25">☁️</span>
+          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-gold/8 blur-3xl" />
+          <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-gold/5 blur-3xl" />
+        </div>
+
+        {/* Trial seal — like launch creative */}
+        <div
+          className="absolute top-8 right-8 hidden lg:flex seal-trial w-28 h-28 rounded-full flex-col items-center justify-center text-center z-10 animate-float-slow"
+          aria-hidden="true"
+        >
+          <span className="text-[11px] font-bold uppercase leading-tight tracking-wide">{TRIAL_DAYS}-day</span>
+          <span className="text-sm font-bold uppercase tracking-wider">FREE</span>
+          <span className="text-[11px] font-bold uppercase leading-tight">trial</span>
         </div>
 
         <div className="max-w-6xl mx-auto px-4 py-16 md:py-24 relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <p className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/15 rounded-full px-4 py-1.5 text-gold-light text-xs font-medium tracking-wide uppercase mb-6">
-                <span className="w-2 h-2 rounded-full bg-mint animate-pulse" />
-                For parents who&apos;ve read &ldquo;Goodnight Moon&rdquo; one too many times
+              <p className="text-[10px] uppercase tracking-[0.25em] text-gold/70 mb-4">
+                dreamytales.co.za
               </p>
-              <h1 className="font-display text-4xl md:text-5xl lg:text-[3.4rem] font-bold leading-[1.1] mb-6">
-                30+ custom bedtime short stories.{" "}
-                <span className="gradient-text">{formatZar(BASE_MONTHLY_ZAR)}/month.</span>
+              <h1 className="font-display text-4xl md:text-5xl lg:text-[3.25rem] font-bold leading-[1.12] mb-5 text-gold-light">
+                Personalised bedtime stories
               </h1>
-              <p className="text-lg text-cream/85 mb-8 leading-relaxed max-w-lg">
-                Less than{" "}
-                <strong className="text-peach">R{perStoryPrice(1)} per magical night</strong>.
-                Personalised illustrated PDFs in your inbox at 6pm — written for{" "}
-                <em className="text-gold-light not-italic font-medium">your</em> child, about{" "}
-                <em className="text-sky not-italic font-medium">their</em> world.
+              <p className="text-lg md:text-xl text-cream/90 mb-2 leading-relaxed max-w-lg">
+                30+ custom illustrated stories · {formatZar(BASE_MONTHLY_ZAR)}/month
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <p className="text-cream/65 mb-8 leading-relaxed max-w-lg text-sm md:text-base">
+                Less than{" "}
+                <strong className="text-gold-light">R{perStoryPrice(1)} per magical night</strong>.
+                Written for <em className="text-gold-light not-italic">your</em> child, about{" "}
+                <em className="text-gold-light not-italic">their</em> world — delivered at 6pm SAST.
+              </p>
+
+              <ul className="space-y-3 mb-8">
+                {CREATIVE_FEATURES.map((f) => (
+                  <li key={f.label} className="flex items-center gap-3 text-sm text-cream/85">
+                    <span className="icon-ring-gold text-xs font-semibold">{f.icon}</span>
+                    {f.label}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <Link
                   href="/signup"
-                  className="bg-gradient-to-r from-gold via-sunset to-coral text-navy px-8 py-4 rounded-full font-semibold text-center hover:brightness-110 transition-all text-lg shadow-lg shadow-coral/25 animate-pulse-glow"
+                  className="btn-gold px-8 py-4 rounded-full text-center text-lg animate-pulse-glow"
                 >
-                  Start {TRIAL_DAYS}-day free trial →
+                  Start tonight →
                 </Link>
                 <Link
                   href="#sample-story"
-                  className="border-2 border-cream/25 text-cream px-8 py-4 rounded-full text-center hover:bg-white/10 hover:border-sky/50 transition-all backdrop-blur-sm"
+                  className="border border-gold/35 text-gold-light px-8 py-4 rounded-full text-center hover:bg-gold/10 transition-all"
                 >
                   See a sample story
                 </Link>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {HIGHLIGHTS.map((h) => (
-                  <span
-                    key={h.label}
-                    className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full px-3 py-1.5 text-xs text-cream/90"
-                  >
-                    <span>{h.icon}</span>
-                    {h.label}
-                  </span>
-                ))}
-              </div>
+              <p className="text-cream/40 text-xs">
+                No charge for {TRIAL_DAYS} days · Cancel with 1 month&apos;s notice
+              </p>
             </div>
 
-            {/* Sample story preview */}
             <div className="hidden lg:block">
               <HeroStoryPreview />
             </div>
@@ -168,7 +164,7 @@ export default function HomePage() {
       </section>
 
       {/* Memes */}
-      <section className="py-16 bg-gradient-to-b from-moon via-cream to-cream pattern-dots">
+      <section className="py-16 bg-cream pattern-dots">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-10">
             <span className="inline-block text-3xl mb-3">😅</span>
@@ -179,9 +175,9 @@ export default function HomePage() {
             {MEMES.map((meme) => (
               <div
                 key={meme.text}
-                className={`relative bg-gradient-to-br ${meme.bg} rounded-2xl p-6 shadow-md card-hover border border-white/80 overflow-hidden`}
+                className="relative card-creative rounded-2xl p-6 card-hover overflow-hidden"
               >
-                <div className={`absolute top-0 left-0 w-full h-1 ${meme.accent}`} />
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gold/60 via-gold to-gold/60" />
                 <span className="text-4xl mb-4 block">{meme.emoji}</span>
                 <p className="text-navy/85 text-sm leading-relaxed font-medium">&ldquo;{meme.text}&rdquo;</p>
               </div>
@@ -193,16 +189,15 @@ export default function HomePage() {
       <SampleStoryShowcase />
 
       {/* How it works */}
-      <section id="how-it-works" className="py-20 bg-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-lavender/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-mint/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+      <section id="how-it-works" className="py-20 gradient-hero-warm text-cream relative overflow-hidden">
+        <div className="absolute inset-0 stars-bg opacity-30 pointer-events-none" />
         <div className="max-w-6xl mx-auto px-4 relative">
           <div className="text-center mb-14">
-            <span className="inline-block bg-sky/15 text-sky text-xs font-semibold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">
+            <span className="inline-block border border-gold/30 text-gold-light text-xs font-semibold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">
               Simple as 1-2-3
             </span>
-            <h2 className="font-display text-3xl md:text-4xl text-navy mb-3">How it works</h2>
-            <p className="text-navy/60 max-w-xl mx-auto">
+            <h2 className="font-display text-3xl md:text-4xl text-gold-light mb-3">How it works</h2>
+            <p className="text-cream/60 max-w-xl mx-auto">
               Three steps between you and never running out of bedtime short stories again.
             </p>
           </div>
@@ -210,18 +205,16 @@ export default function HomePage() {
             {STEPS.map((item, i) => (
               <div
                 key={item.step}
-                className={`relative bg-cream/80 rounded-3xl p-8 text-center card-hover ring-4 ${item.ring} border border-navy/5`}
+                className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-8 text-center card-hover border border-gold/15"
               >
                 {i < STEPS.length - 1 && (
-                  <span className="hidden md:block absolute top-10 -right-4 text-gold/40 text-2xl z-10">→</span>
+                  <span className="hidden md:block absolute top-10 -right-4 text-gold/30 text-2xl z-10">→</span>
                 )}
-                <div
-                  className={`w-14 h-14 rounded-2xl ${item.color} text-white font-bold text-xl flex items-center justify-center mx-auto mb-5 shadow-lg`}
-                >
+                <div className="w-14 h-14 rounded-full border-2 border-gold/50 bg-gold/10 text-gold-light font-bold text-xl flex items-center justify-center mx-auto mb-5">
                   {item.step}
                 </div>
-                <h3 className="font-display text-xl text-navy mb-3">{item.title}</h3>
-                <p className="text-navy/60 text-sm leading-relaxed">{item.desc}</p>
+                <h3 className="font-display text-xl text-gold-light mb-3">{item.title}</h3>
+                <p className="text-cream/65 text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -229,29 +222,50 @@ export default function HomePage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-20 bg-gradient-to-br from-lavender/50 via-moon to-peach/20 relative">
-        <div className="absolute inset-0 pattern-dots opacity-50" />
+      <section id="pricing" className="py-20 bg-cream relative">
+        <div className="absolute inset-0 pattern-dots opacity-40" />
         <div className="max-w-6xl mx-auto px-4 relative">
           <div className="text-center mb-12">
-            <span className="inline-block bg-gold/20 text-gold text-xs font-semibold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">
+            <span className="inline-block border border-gold/40 text-gold text-xs font-semibold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4 bg-gold/5">
               No surprises
             </span>
             <h2 className="font-display text-3xl md:text-4xl text-navy mb-3">Simple, honest pricing</h2>
             <p className="text-navy/60">One price. Thirty-plus stories. No hidden fees. Pay yearly and get one month free.</p>
           </div>
-          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto mb-8">
-            <div className="relative bg-white rounded-3xl p-8 shadow-xl card-hover border-2 border-gold overflow-hidden">
-              <div className="absolute top-0 right-0 bg-gradient-to-l from-gold to-sunset text-navy text-xs font-bold px-4 py-1.5 rounded-bl-2xl">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-8">
+            <div className="relative card-creative rounded-3xl p-8 card-hover border-2 border-gold/50 overflow-hidden">
+              <div className="absolute top-0 right-0 bg-gold text-navy text-xs font-bold px-4 py-1.5 rounded-bl-2xl">
                 Most popular
               </div>
-              <p className="text-gold font-semibold text-sm uppercase tracking-wide mb-2">First child</p>
+              <p className="text-gold font-semibold text-sm uppercase tracking-wide mb-2">Storybook PDF</p>
               <p className="font-display text-5xl font-bold text-navy mb-1">{formatZar(BASE_MONTHLY_ZAR)}</p>
-              <p className="text-navy/50 text-sm mb-6">per month · ~R{perStoryPrice(1)}/story</p>
+              <p className="text-navy/50 text-sm mb-6">per month · ~R{perStoryPrice(1, "pdf")}/story</p>
               <ul className="space-y-3 text-sm text-navy/80 mb-8">
-                {["30+ custom stories per month", "Illustrated PDF every night at 6pm", "Age-appropriate for 3–12", `${TRIAL_DAYS}-day free trial`].map(
+                {["30+ illustrated PDFs per month", "Personalised story & art every night", "Delivered at 6pm SAST", `${TRIAL_DAYS}-day free trial`].map(
                   (item) => (
                     <li key={item} className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-mint/30 text-mint flex items-center justify-center text-xs">✓</span>
+                      <span className="w-5 h-5 rounded-full bg-gold/15 text-gold flex items-center justify-center text-xs">✓</span>
+                      {item}
+                    </li>
+                  )
+                )}
+              </ul>
+              <Link href="/signup" className="block w-full btn-gold text-center py-3.5 rounded-full">
+                Start free trial
+              </Link>
+            </div>
+            <div className="relative card-creative rounded-3xl p-8 card-hover border-2 border-navy/15 overflow-hidden">
+              <div className="absolute top-0 right-0 bg-navy text-gold-light text-xs font-bold px-4 py-1.5 rounded-bl-2xl">
+                PDF + Audio
+              </div>
+              <p className="text-navy font-semibold text-sm uppercase tracking-wide mb-2">With narration</p>
+              <p className="font-display text-5xl font-bold text-navy mb-1">{formatZar(BASE_AUDIO_MONTHLY_ZAR)}</p>
+              <p className="text-navy/50 text-sm mb-6">per month · calm female voice</p>
+              <ul className="space-y-3 text-sm text-navy/80 mb-8">
+                {["Everything in Storybook PDF", "MP3 narration each night", "Gentle pause after each page", `${TRIAL_DAYS}-day free trial`].map(
+                  (item) => (
+                    <li key={item} className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-gold/15 text-gold flex items-center justify-center text-xs">✓</span>
                       {item}
                     </li>
                   )
@@ -259,26 +273,28 @@ export default function HomePage() {
               </ul>
               <Link
                 href="/signup"
-                className="block w-full bg-gradient-to-r from-navy to-navy-light text-cream text-center py-3.5 rounded-full font-medium hover:brightness-110 transition-all shadow-lg shadow-navy/20"
+                className="block w-full bg-navy text-gold-light text-center py-3.5 rounded-full font-medium hover:bg-navy-soft transition-colors"
               >
-                Start free trial
+                Start with audio
               </Link>
             </div>
-            <div className="bg-white/90 backdrop-blur rounded-3xl p-8 shadow-lg card-hover border-2 border-sky/30">
-              <p className="text-sky font-semibold text-sm uppercase tracking-wide mb-2">Each additional child</p>
+          </div>
+          <div className="grid md:grid-cols-1 gap-8 max-w-3xl mx-auto mb-8">
+            <div className="card-creative rounded-3xl p-8 card-hover">
+              <p className="text-gold font-semibold text-sm uppercase tracking-wide mb-2">Each additional child</p>
               <p className="font-display text-5xl font-bold text-navy mb-1">{formatZar(ADDON_CHILD_ZAR)}</p>
               <p className="text-navy/50 text-sm mb-6">per month · their own nightly story</p>
               <ul className="space-y-3 text-sm text-navy/80 mb-8">
                 {["Separate personalised story stream", "Own questionnaire & character", "Add during signup or later", `Same ${TRIAL_DAYS}-day trial applies`].map(
                   (item) => (
                     <li key={item} className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-sky/25 text-sky flex items-center justify-center text-xs">✓</span>
+                      <span className="w-5 h-5 rounded-full bg-gold/15 text-gold flex items-center justify-center text-xs">✓</span>
                       {item}
                     </li>
                   )
                 )}
               </ul>
-              <div className="text-center bg-gradient-to-r from-sky/10 to-purple/10 rounded-2xl py-4 px-4">
+              <div className="text-center bg-gold/8 border border-gold/20 rounded-2xl py-4 px-4">
                 <p className="text-navy/70 text-sm font-medium">
                   2 children = <span className="text-navy font-bold">{formatZar(monthlyTotal(2))}/mo</span> total
                 </p>
@@ -287,30 +303,34 @@ export default function HomePage() {
           </div>
 
           <div className="max-w-3xl mx-auto">
-            <div className="relative bg-gradient-to-r from-purple/15 via-gold/20 to-mint/15 rounded-3xl p-8 border-2 border-gold/40 shadow-lg card-hover overflow-hidden">
-              <div className="absolute top-0 right-0 bg-gold text-navy text-xs font-bold px-4 py-1.5 rounded-bl-2xl">
+            <div className="relative gradient-hero-warm rounded-3xl p-8 border border-gold/25 shadow-lg card-hover overflow-hidden text-cream">
+              <div className="absolute inset-0 stars-bg opacity-40 pointer-events-none" />
+              <div className="absolute top-0 right-0 bg-gold text-navy text-xs font-bold px-4 py-1.5 rounded-bl-2xl z-10">
                 Best value
               </div>
-              <div className="grid md:grid-cols-[1fr_auto] gap-6 items-center">
+              <div className="grid md:grid-cols-[1fr_auto] gap-6 items-center relative">
                 <div>
-                  <p className="text-purple font-semibold text-sm uppercase tracking-wide mb-2">Pay annually</p>
-                  <h3 className="font-display text-2xl text-navy mb-2">Get 1 month free</h3>
-                  <p className="text-navy/70 text-sm leading-relaxed">
+                  <p className="text-gold-light font-semibold text-sm uppercase tracking-wide mb-2">Pay annually</p>
+                  <h3 className="font-display text-2xl text-gold-light mb-2">Get 1 month free</h3>
+                  <p className="text-cream/70 text-sm leading-relaxed">
                     Pay for 11 months, receive 12 months of nightly stories. Same great service — less per year.
                   </p>
-                  <ul className="mt-4 space-y-2 text-sm text-navy/80">
+                  <ul className="mt-4 space-y-2 text-sm text-cream/80">
                     <li className="flex items-center gap-2">
-                      <span className="text-gold">✓</span> 1 child: {formatZar(annualTotal(1))}/year (save {formatZar(annualSavings(1))})
+                      <span className="text-gold">✓</span> PDF — 1 child: {formatZar(annualTotal(1, "pdf"))}/year
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="text-gold">✓</span> 2 children: {formatZar(annualTotal(2))}/year (save {formatZar(annualSavings(2))})
+                      <span className="text-gold">✓</span> PDF — 2 children: {formatZar(annualTotal(2, "pdf"))}/year
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-gold">✓</span> PDF + Audio — 1 child: {formatZar(annualTotal(1, "pdf_audio"))}/year
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-gold">✓</span> PDF + Audio — 2 children: {formatZar(annualTotal(2, "pdf_audio"))}/year
                     </li>
                   </ul>
                 </div>
-                <Link
-                  href="/signup"
-                  className="shrink-0 bg-gradient-to-r from-navy to-purple text-cream px-8 py-3.5 rounded-full font-medium hover:brightness-110 transition-all text-center shadow-lg"
-                >
+                <Link href="/signup" className="shrink-0 btn-gold px-8 py-3.5 rounded-full text-center relative z-10">
                   Choose annual at signup
                 </Link>
               </div>
@@ -321,7 +341,7 @@ export default function HomePage() {
 
       <PublicReviews />
 
-      {/* FAQ — visible to users and mirrored in FAQPage JSON-LD */}
+      {/* FAQ */}
       <section id="faq" className="py-20 bg-cream" aria-labelledby="faq-heading">
         <div className="max-w-2xl mx-auto px-4">
           <div className="text-center mb-12">
@@ -329,45 +349,43 @@ export default function HomePage() {
             <h2 id="faq-heading" className="font-display text-3xl text-navy">Questions? We&apos;ve got you.</h2>
           </div>
           <div className="space-y-4">
-            {FAQ_ITEMS.map((item, i) => {
-              const accents = ["border-l-coral", "border-l-sky", "border-l-purple", "border-l-mint", "border-l-gold", "border-l-rose", "border-l-sunset"];
-              return (
-                <details
-                  key={item.q}
-                  className={`bg-white rounded-2xl p-6 shadow-sm border border-navy/5 border-l-4 ${accents[i % accents.length]} group card-hover`}
-                >
-                  <summary className="font-medium text-navy cursor-pointer list-none flex justify-between items-center gap-4">
-                    {item.q}
-                    <span className="shrink-0 w-8 h-8 rounded-full bg-gold/15 text-gold group-open:rotate-45 transition-transform text-xl flex items-center justify-center">
-                      +
-                    </span>
-                  </summary>
-                  <p className="text-navy/70 text-sm mt-4 leading-relaxed">{item.a}</p>
-                </details>
-              );
-            })}
+            {FAQ_ITEMS.map((item) => (
+              <details
+                key={item.q}
+                className="card-creative rounded-2xl p-6 border-l-4 border-l-gold group card-hover"
+              >
+                <summary className="font-medium text-navy cursor-pointer list-none flex justify-between items-center gap-4">
+                  {item.q}
+                  <span className="shrink-0 w-8 h-8 rounded-full bg-gold/15 text-gold group-open:rotate-45 transition-transform text-xl flex items-center justify-center">
+                    +
+                  </span>
+                </summary>
+                <p className="text-navy/70 text-sm mt-4 leading-relaxed">{item.a}</p>
+              </details>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="gradient-hero-warm text-cream py-20 relative overflow-hidden">
+      <section className="gradient-hero text-cream py-20 relative overflow-hidden">
+        <div className="absolute inset-0 stars-bg opacity-50 pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none">
-          <span className="absolute top-8 left-[10%] text-2xl animate-twinkle">✦</span>
+          <span className="absolute top-8 left-[10%] text-2xl animate-twinkle text-gold-light">✦</span>
           <span className="absolute bottom-12 right-[15%] text-3xl animate-float">🌙</span>
-          <span className="absolute top-1/2 left-[5%] text-4xl animate-drift opacity-40">📚</span>
+          <span className="absolute top-1/2 left-[5%] text-4xl animate-drift opacity-30">☁️</span>
         </div>
         <div className="max-w-2xl mx-auto px-4 text-center relative">
           <span className="text-5xl mb-6 block animate-float-slow">✨</span>
-          <h2 className="font-display text-3xl md:text-4xl mb-4">
-            Tonight could be the <span className="gradient-text">easiest bedtime yet.</span>
+          <h2 className="font-display text-3xl md:text-4xl mb-4 text-gold-light">
+            Tonight could be the easiest bedtime yet.
           </h2>
           <p className="text-cream/75 mb-10 text-lg">
             Join parents who&apos;ve traded story-time stress for an inbox full of magic.
           </p>
           <Link
             href="/signup"
-            className="inline-block bg-gradient-to-r from-gold via-peach to-coral text-navy px-10 py-4 rounded-full font-semibold text-lg hover:brightness-110 transition-all shadow-xl shadow-coral/30 animate-pulse-glow"
+            className="inline-block btn-gold px-10 py-4 rounded-full text-lg animate-pulse-glow"
           >
             Start your {TRIAL_DAYS}-day free trial
           </Link>

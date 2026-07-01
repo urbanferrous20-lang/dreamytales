@@ -12,12 +12,18 @@ export const metadata = createPageMetadata({
 
 export default function SignupPage() {
   return (
-    <div className="py-12 px-4">
-      <div className="text-center mb-10">
-        <h1 className="font-display text-3xl text-navy mb-2">Start your free trial</h1>
-        <p className="text-navy/60">Personalised bedtime short stories begin after a quick questionnaire.</p>
+    <>
+      <div className="gradient-hero text-cream py-12 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 stars-bg opacity-40 pointer-events-none" />
+        <div className="max-w-2xl mx-auto text-center relative">
+          <span className="text-3xl mb-3 block animate-float">🌙</span>
+          <h1 className="font-display text-3xl md:text-4xl text-gold-light mb-2">Start your free trial</h1>
+          <p className="text-cream/70">Personalised bedtime short stories begin after a quick questionnaire.</p>
+        </div>
       </div>
-      <SignupWizard />
-    </div>
+      <div className="py-12 px-4 bg-cream">
+        <SignupWizard />
+      </div>
+    </>
   );
 }

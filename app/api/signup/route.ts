@@ -4,7 +4,7 @@ import { hashPassword } from "@/lib/auth";
 import { ANALYTICS_EVENTS, logAnalyticsEventFromRequest } from "@/lib/analytics";
 import { prisma } from "@/lib/db";
 import { formatSignupApiError, hasActiveSubscription } from "@/lib/signup-errors";
-import { recurringCharge, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
+import { recurringCharge, TRIAL_DAYS, type BillingInterval, type StoryPlan } from "@/lib/pricing";
 import { resolveActiveAffiliateCode } from "@/lib/affiliate";
 import {
   addDays,
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, email, password, children, billingInterval, affiliateCode } = parsed.data;
+    const { name, email, password, children, billingInterval, storyPlan, affiliateCode } = parsed.data;
     const normalizedEmail = email.trim().toLowerCase();
     const resolvedAffiliateCode = await resolveActiveAffiliateCode(affiliateCode);
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const passwordHash = await hashPassword(password);
     const signupId = crypto.randomUUID();
     const billingDate = formatBillingDate(addDays(new Date(), TRIAL_DAYS));
-    const recurringAmount = recurringCharge(children.length, billingInterval);
+    const recurringAmount = recurringCharge(children.length, billingInterval, storyPlan);
     const nameParts = name.trim().split(" ");
     const firstName = nameParts[0] ?? name;
     const lastName = nameParts.slice(1).join(" ") || firstName;
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
         passwordHash,
         childrenJson: JSON.stringify(children),
         billingInterval,
+        storyPlan,
         agreedToTerms: true,
         affiliateCode: resolvedAffiliateCode,
         expiresAt: addDays(new Date(), 7),
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       eventType: ANALYTICS_EVENTS.SIGNUP_SUBMIT,
       sessionId: signupId,
       path: "/signup",
-      metadata: { signupId, email: normalizedEmail, childCount: children.length, billingInterval, affiliateCode: resolvedAffiliateCode },
+      metadata: { signupId, email: normalizedEmail, childCount: children.length, billingInterval, storyPlan, affiliateCode: resolvedAffiliateCode },
     });
 
     const formData = buildSubscriptionFormData({
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
       recurringAmount: recurringAmount.toFixed(2),
       billingInterval,
       itemName: "Dreamy Tales Subscription",
-      itemDescription: `${children.length} child(ren) - ${billingInterval === "annual" ? "annual" : "monthly"} bedtime short stories`,
+      itemDescription: `${children.length} child(ren) - ${storyPlan === "pdf_audio" ? "PDF + audio" : "PDF"} - ${billingInterval === "annual" ? "annual" : "monthly"} bedtime short stories`,
       emailAddress: normalizedEmail,
       nameFirst: firstName,
       nameLast: lastName,

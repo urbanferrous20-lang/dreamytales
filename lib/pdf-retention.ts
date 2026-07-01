@@ -25,7 +25,7 @@ export async function cleanupExpiredPdfs(): Promise<{
         { sentAt: null, createdAt: { lt: cutoff } },
       ],
     },
-    select: { id: true, pdfPath: true, title: true },
+    select: { id: true, pdfPath: true, audioPath: true, title: true },
   });
 
   const errors: string[] = [];
@@ -39,9 +39,15 @@ export async function cleanupExpiredPdfs(): Promise<{
         });
       }
 
+      if (story.audioPath) {
+        await fs.unlink(story.audioPath).catch((err: NodeJS.ErrnoException) => {
+          if (err.code !== "ENOENT") throw err;
+        });
+      }
+
       await prisma.story.update({
         where: { id: story.id },
-        data: { pdfPath: "" },
+        data: { pdfPath: "", audioPath: null },
       });
 
       deleted += 1;

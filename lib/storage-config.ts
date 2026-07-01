@@ -12,3 +12,7 @@ export const DEFAULT_AVG_PDF_BYTES = 2.5 * 1024 * 1024;
 export function isPdfStored(pdfPath: string | null | undefined): boolean {
   return Boolean(pdfPath && pdfPath.trim().length > 0);
 }
+
+export function isAudioStored(audioPath: string | null | undefined): boolean {
+  return Boolean(audioPath && audioPath.trim().length > 0);
+}

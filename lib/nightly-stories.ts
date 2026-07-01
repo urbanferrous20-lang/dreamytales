@@ -2,6 +2,8 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { sendStoryEmail, sendAdminAlert } from "@/lib/email";
 import { buildStoryPdf } from "@/lib/pdf-builder";
+import { includesNarration } from "@/lib/pricing";
+import { buildAndSaveStoryNarration } from "@/lib/story-narration";
 import { getAppUrl } from "@/lib/payfast";
 import { getAgeBand, isBirthdayOnDate, getAgeOnDate, parseBirthDate } from "@/lib/child-age";
 import {
@@ -251,6 +253,31 @@ export async function processNightlyStoryForChild(
       })),
     });
 
+    const storyPlan = child.user.subscription?.storyPlan ?? "pdf";
+    const withNarration = includesNarration(storyPlan);
+    let audioPath: string | null = null;
+
+    if (withNarration) {
+      try {
+        audioPath = await buildAndSaveStoryNarration(
+          child.id,
+          story.pages.map((p) => ({ pageNumber: p.pageNumber, text: p.text })),
+          { language: resolveStoryLanguage(child.language) }
+        );
+      } catch (error) {
+        console.error(
+          `Narration failed for ${child.name}:`,
+          error instanceof Error ? error.message : error
+        );
+        await sendAdminAlert(
+          "Story narration failed",
+          `Child: ${child.name} (${child.id})\nStory: ${story.title}\n${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
+
     const storyRecord = await prisma.story.upsert({
       where: { childId_storyDate: { childId: child.id, storyDate } },
       create: {
@@ -262,6 +289,7 @@ export async function processNightlyStoryForChild(
         inspirationKey: inspirationKey ?? null,
         isBirthdayStory: isBirthday,
         pdfPath,
+        audioPath,
         storyDate,
       },
       update: {
@@ -272,6 +300,7 @@ export async function processNightlyStoryForChild(
         inspirationKey: inspirationKey ?? null,
         isBirthdayStory: isBirthday,
         pdfPath,
+        audioPath,
       },
     });
 
@@ -282,9 +311,11 @@ export async function processNightlyStoryForChild(
       storyTitle: story.title,
       teaser: story.teaser,
       pdfPath,
+      audioPath,
       manageUrl: `${getAppUrl()}/dashboard`,
       isBirthday,
       turningAge: isBirthday ? turningAge : undefined,
+      includesNarration: withNarration,
     });
 
     await prisma.story.update({

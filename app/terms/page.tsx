@@ -45,8 +45,9 @@ export default function TermsPage() {
         <div>
           <h2 className="font-display text-xl text-navy mb-2">3. Pricing & Billing</h2>
           <ul className="list-disc pl-5 space-y-1">
-            <li>First child: R99 per month</li>
-            <li>Each additional child: R50 per month</li>
+            <li>Storybook PDF (first child): R99 per month</li>
+            <li>PDF + Audio narration (first child): R149 per month — illustrated PDF plus a calm MP3 read-aloud each night</li>
+            <li>Each additional child: R50 per month (same plan tier as your subscription)</li>
             <li>Annual billing: pay for 11 months and receive 12 months of service (one month free)</li>
             <li>A 7-day free trial is offered. No charge is made during the trial period.</li>
             <li>After the trial, your subscription renews via PayFast recurring billing (monthly or annually, as selected).</li>

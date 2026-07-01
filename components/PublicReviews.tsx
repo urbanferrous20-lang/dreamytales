@@ -7,11 +7,11 @@ export async function PublicReviews() {
   if (data.totalReviews === 0) return null;
 
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-lavender/30 relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gold/10 rounded-full blur-3xl" />
+    <section className="py-20 bg-cream relative overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gold/8 rounded-full blur-3xl" />
       <div className="max-w-6xl mx-auto px-4 relative">
         <div className="text-center mb-10">
-          <span className="inline-block bg-rose/15 text-rose text-xs font-semibold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">
+          <span className="inline-block border border-gold/30 text-gold text-xs font-semibold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4 bg-gold/5">
             Parent love
           </span>
           <h2 className="font-display text-3xl md:text-4xl text-navy mb-2">What parents are saying</h2>
@@ -28,12 +28,10 @@ export async function PublicReviews() {
 
         {data.testimonials.length > 0 && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {data.testimonials.map((t, i) => {
-              const borders = ["border-t-coral", "border-t-sky", "border-t-purple", "border-t-mint", "border-t-gold", "border-t-rose"];
-              return (
+            {data.testimonials.map((t, i) => (
                 <blockquote
                   key={i}
-                  className={`bg-white rounded-2xl p-6 shadow-md border border-navy/5 border-t-4 ${borders[i % borders.length]} card-hover`}
+                  className="card-creative rounded-2xl p-6 border-t-4 border-t-gold card-hover"
                 >
                   <p className="text-gold text-sm mb-2">{formatRatingStars(t.rating)}</p>
                   <p className="text-navy/80 text-sm leading-relaxed italic">&ldquo;{t.comment}&rdquo;</p>
@@ -41,8 +39,7 @@ export async function PublicReviews() {
                     — {t.author} · {t.context}
                   </footer>
                 </blockquote>
-              );
-            })}
+            ))}
           </div>
         )}
       </div>

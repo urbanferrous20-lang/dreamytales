@@ -1,7 +1,7 @@
 import { ANALYTICS_EVENTS } from "@/lib/analytics-events";
 import { addDays } from "@/lib/dates";
 import { prisma } from "@/lib/db";
-import { recurringCharge, TRIAL_DAYS, type BillingInterval } from "@/lib/pricing";
+import { recurringCharge, TRIAL_DAYS, type BillingInterval, type StoryPlan } from "@/lib/pricing";
 import { childProfileSchema, mergeChildInterests, type ChildProfileInput } from "@/lib/types/child";
 import type { User } from "@prisma/client";
 import { parseBirthDate, estimateBirthDateFromAge, getEffectiveAge } from "@/lib/child-age";
@@ -145,11 +145,16 @@ async function upsertSubscriptionFromPending(params: {
   userId: string;
   children: ChildProfileInput[];
   billingInterval: BillingInterval;
+  storyPlan: StoryPlan;
   payfastToken?: string;
   existingTrialEndsAt?: Date | null;
   existingStatus?: string | null;
 }): Promise<void> {
-  const recurringAmount = recurringCharge(params.children.length, params.billingInterval);
+  const recurringAmount = recurringCharge(
+    params.children.length,
+    params.billingInterval,
+    params.storyPlan
+  );
   const trialEndsAt = params.existingTrialEndsAt ?? addDays(new Date(), TRIAL_DAYS);
   const shouldStartTrial =
     !params.existingStatus || params.existingStatus === "pending" || params.existingStatus === "cancelled";
@@ -163,6 +168,7 @@ async function upsertSubscriptionFromPending(params: {
       recurringAmount,
       childCount: params.children.length,
       billingInterval: params.billingInterval,
+      storyPlan: params.storyPlan,
       trialEndsAt,
     },
     update: {
@@ -170,6 +176,7 @@ async function upsertSubscriptionFromPending(params: {
       recurringAmount,
       childCount: params.children.length,
       billingInterval: params.billingInterval,
+      storyPlan: params.storyPlan,
       ...(shouldStartTrial ? { status: "trial" } : {}),
       ...(params.existingTrialEndsAt ? {} : { trialEndsAt }),
     },
@@ -200,6 +207,7 @@ export async function activateSignup(
     const billingInterval = (
       pending.billingInterval === "annual" ? "annual" : "monthly"
     ) as BillingInterval;
+    const storyPlan = (pending.storyPlan === "pdf_audio" ? "pdf_audio" : "pdf") as StoryPlan;
 
     const existing = await prisma.user.findUnique({
       where: { email: pending.email.toLowerCase() },
@@ -226,6 +234,7 @@ export async function activateSignup(
         userId: existing.id,
         children,
         billingInterval,
+        storyPlan,
         payfastToken,
         existingTrialEndsAt: existing.subscription?.trialEndsAt,
         existingStatus: existing.subscription?.status,
@@ -260,9 +269,10 @@ export async function activateSignup(
           create: {
             status: "trial",
             payfastToken: payfastToken ?? null,
-            recurringAmount: recurringCharge(children.length, billingInterval),
+            recurringAmount: recurringCharge(children.length, billingInterval, storyPlan),
             childCount: children.length,
             billingInterval,
+            storyPlan,
             trialEndsAt: addDays(new Date(), TRIAL_DAYS),
           },
         },

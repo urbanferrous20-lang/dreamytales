@@ -13,7 +13,7 @@ import {
   getLanguageLabel,
   getStoryLanguageInstruction,
 } from "@/lib/sa-languages";
-import type { BillingInterval } from "@/lib/pricing";
+import type { BillingInterval, StoryPlan } from "@/lib/pricing";
 
 export const INTEREST_OPTIONS = [
   "cars",
@@ -116,12 +116,13 @@ export const signupSchema = z.object({
     message: "You must agree to the Terms & Privacy Policy",
   }),
   billingInterval: z.enum(["monthly", "annual"]).default("monthly"),
+  storyPlan: z.enum(["pdf", "pdf_audio"]).default("pdf"),
   children: z.array(childProfileSchema).min(1, "Add at least one child"),
   affiliateCode: z.string().optional(),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;
-export type { BillingInterval };
+export type { BillingInterval, StoryPlan };
 
 export function getWordBudget(age: number): { min: number; max: number; perPage: number } {
   if (age <= 5) return { min: 200, max: 300, perPage: 25 };

@@ -295,28 +295,58 @@ export function buildSubscriptionFormData(params: PayfastCheckoutParams): Record
 }
 
 export async function cancelPayfastSubscription(token: string): Promise<boolean> {
+  const result = await payfastSubscriptionRequest("PUT", `/subscriptions/${token}/cancel`);
+  return result.ok;
+}
+
+export async function updatePayfastSubscription(params: {
+  token: string;
+  recurringAmount: string;
+  billingInterval: BillingInterval;
+}): Promise<{ ok: boolean; error?: string }> {
+  const frequency = params.billingInterval === "annual" ? "6" : "3";
+  return payfastSubscriptionRequest("PATCH", `/subscriptions/${params.token}/update`, {
+    amount: params.recurringAmount,
+    recurring_amount: params.recurringAmount,
+    frequency,
+    cycles: "0",
+  });
+}
+
+async function payfastSubscriptionRequest(
+  method: "PUT" | "PATCH",
+  path: string,
+  body?: Record<string, string>
+): Promise<{ ok: boolean; error?: string }> {
   const { merchantId, passphrase } = getMerchantConfig();
   const timestamp = new Date().toISOString().slice(0, 19);
-  const path = `/subscriptions/${token}/cancel`;
-  const signatureData = {
+
+  const signatureData: Record<string, string> = {
     "merchant-id": merchantId,
     timestamp,
     version: "v1",
+    ...(body ?? {}),
   };
   const signature = generatePayfastSignature(signatureData, passphrase);
 
   const url = `${getPayfastApiBase()}${path}`;
   const response = await fetch(url, {
-    method: "PUT",
+    method,
     headers: {
       "merchant-id": merchantId,
       version: "v1",
       timestamp,
       signature,
+      ...(body ? { "Content-Type": "application/json" } : {}),
     },
+    ...(body ? { body: JSON.stringify(body) } : {}),
   });
 
-  return response.ok;
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    return { ok: false, error: text || response.statusText };
+  }
+  return { ok: true };
 }
 
 export async function validateItnWithPayfast(postData: string): Promise<boolean> {

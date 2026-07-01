@@ -93,6 +93,7 @@ model Subscription {
   recurringAmount    Float
   childCount         Int       @default(1)
   billingInterval    String    @default("monthly")
+  storyPlan          String    @default("pdf")
   trialEndsAt        DateTime?
   nextBillingDate    DateTime?
   cancelRequestedAt  DateTime?
@@ -112,6 +113,7 @@ model Story {
   inspirationKey String?
   isBirthdayStory Boolean @default(false)
   pdfPath   String
+  audioPath String?
   storyDate DateTime
   sentAt    DateTime?
   createdAt DateTime     @default(now())
@@ -127,6 +129,7 @@ model PendingSignup {
   passwordHash String
   childrenJson String @db.Text
   billingInterval String @default("monthly")
+  storyPlan String @default("pdf")
   agreedToTerms Boolean @default(false)
   affiliateCode String?
   createdAt DateTime @default(now())

@@ -4,16 +4,21 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getLanguageLabel } from "@/lib/sa-languages";
 import { getEffectiveAge } from "@/lib/child-age";
-import { isPdfStored } from "@/lib/storage-config";
+import { isAudioStored, isPdfStored } from "@/lib/storage-config";
 import {
   billingCadenceLabel,
   billingIntervalLabel,
   formatZar,
+  includesNarration,
   monthlyTotal,
   recurringCharge,
+  storyPlanLabel,
+  type StoryPlan,
+  type BillingInterval,
 } from "@/lib/pricing";
 import { SiteReviewForm } from "@/components/SiteReviewForm";
 import { StoryReviewForm } from "@/components/StoryReviewForm";
+import { PlanUpgradePanel } from "@/components/PlanUpgradePanel";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -41,6 +46,7 @@ export default async function DashboardPage() {
 
   const sub = user.subscription;
   const isActive = sub && ["trial", "active", "cancel_pending"].includes(sub.status);
+  const storyPlan = ((sub?.storyPlan as StoryPlan) ?? "pdf") as StoryPlan;
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
@@ -69,6 +75,7 @@ export default async function DashboardPage() {
               </p>
               <p>
                 Plan: {billingIntervalLabel(sub.billingInterval as "monthly" | "annual")} ·{" "}
+                {storyPlanLabel(storyPlan)} ·{" "}
                 {formatZar(sub.recurringAmount)}/{billingCadenceLabel(sub.billingInterval as "monthly" | "annual")} (
                 {sub.childCount} {sub.childCount === 1 ? "child" : "children"})
               </p>
@@ -99,20 +106,38 @@ export default async function DashboardPage() {
           <h2 className="font-medium text-navy mb-2">Delivery schedule</h2>
           <p className="text-sm text-navy/70">
             A new illustrated PDF story arrives in your inbox every night at{" "}
-            <strong>6:00 PM South African time</strong>.
+            <strong>6:00 PM South African time</strong>
+            {sub && includesNarration(sub.storyPlan) ? (
+              <>
+                . On the PDF + Audio plan, <strong>one email</strong> includes both the PDF and MP3 narration.
+              </>
+            ) : (
+              "."
+            )}
           </p>
           <p className="text-sm text-navy/50 mt-2">
             {sub?.billingInterval === "annual" ? (
               <>
-                Annual plan: {formatZar(recurringCharge(user.children.length, "annual"))}/year · Monthly equivalent{" "}
-                {formatZar(monthlyTotal(user.children.length))}/mo
+                Annual plan: {formatZar(recurringCharge(user.children.length, "annual", storyPlan))}/year · Monthly equivalent{" "}
+                {formatZar(monthlyTotal(user.children.length, storyPlan))}/mo
               </>
             ) : (
-              <>Monthly total: {formatZar(monthlyTotal(user.children.length))}</>
+              <>Monthly total: {formatZar(monthlyTotal(user.children.length, storyPlan))}</>
             )}
           </p>
         </div>
       </div>
+
+      {isActive &&
+        sub &&
+        sub.status !== "cancel_pending" &&
+        !includesNarration(sub.storyPlan) && (
+          <PlanUpgradePanel
+            childCount={sub.childCount}
+            billingInterval={(sub.billingInterval === "annual" ? "annual" : "monthly") as BillingInterval}
+            currentRecurringAmount={sub.recurringAmount}
+          />
+        )}
 
       <div className="mb-10">
         <SiteReviewForm
@@ -157,18 +182,30 @@ export default async function DashboardPage() {
                     const review = story.reviews[0];
                     return (
                       <li key={story.id} className="text-sm">
-                        <div className="flex justify-between items-start gap-4">
+                        <div className="flex justify-between items-start gap-4 flex-wrap">
                           <span className="text-navy">{story.title}</span>
-                          {isPdfStored(story.pdfPath) ? (
-                            <a
-                              href={`/api/stories/${story.id}/download`}
-                              className="text-gold hover:underline shrink-0"
-                            >
-                              Download PDF
-                            </a>
-                          ) : (
-                            <span className="text-navy/40 shrink-0 text-xs">In your email</span>
-                          )}
+                          <div className="flex gap-3 shrink-0">
+                            {isPdfStored(story.pdfPath) ? (
+                              <a
+                                href={`/api/stories/${story.id}/download`}
+                                className="text-gold hover:underline"
+                              >
+                                PDF
+                              </a>
+                            ) : (
+                              <span className="text-navy/40 text-xs">PDF in email</span>
+                            )}
+                            {isAudioStored(story.audioPath) ? (
+                              <a
+                                href={`/api/stories/${story.id}/audio`}
+                                className="text-purple hover:underline"
+                              >
+                                Audio
+                              </a>
+                            ) : sub && includesNarration(sub.storyPlan) ? (
+                              <span className="text-navy/40 text-xs">Audio in email</span>
+                            ) : null}
+                          </div>
                         </div>
                         <StoryReviewForm
                           storyId={story.id}

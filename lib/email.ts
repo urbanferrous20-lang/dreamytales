@@ -1,10 +1,11 @@
 import "server-only";
 import {
   sendAdminAlert as sendAdminAlertSmtp,
-  sendPdfEmail,
+  sendStoryDeliveryEmail,
   sendSmtpMail,
   sendTestEmail as sendTestEmailSmtp,
 } from "@/lib/smtp";
+import { buildStoryDeliveryEmailHtml } from "@/lib/story-delivery-email";
 
 export { sendTestEmailSmtp as sendTestEmail };
 export { sendAdminAlertSmtp as sendAdminAlert };
@@ -16,40 +17,37 @@ export async function sendStoryEmail(params: {
   storyTitle: string;
   teaser: string;
   pdfPath: string;
+  audioPath?: string | null;
   manageUrl: string;
   isBirthday?: boolean;
   turningAge?: number;
+  includesNarration?: boolean;
 }): Promise<void> {
   const birthday = params.isBirthday === true;
+  const withAudio = params.includesNarration === true && Boolean(params.audioPath);
   const subject = birthday
     ? `Happy birthday, ${params.childName}! Tonight's special story: ${params.storyTitle}`
     : `Tonight's story for ${params.childName}: ${params.storyTitle}`;
-  const intro = birthday
-    ? `<p>It's <strong>${params.childName}'s birthday</strong>${
-        params.turningAge != null ? ` — turning ${params.turningAge} today` : ""
-      }! We've written a special birthday bedtime story just for them.</p>`
-    : "";
-  const bodyLine = birthday
-    ? `<p>Your illustrated <strong>birthday</strong> bedtime short story for <strong>${params.childName}</strong> is attached as a PDF — a once-a-year treat for tonight's read-aloud.</p>`
-    : `<p>Your illustrated bedtime short story for <strong>${params.childName}</strong> is attached as a PDF — perfect for tonight's read-aloud at 6pm.</p>`;
 
-  await sendPdfEmail({
+  const slug = params.storyTitle.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+
+  await sendStoryDeliveryEmail({
     to: params.to,
     subject,
-    html: `
-      <div style="font-family: Georgia, serif; max-width: 560px; margin: 0 auto; color: #1e293b;">
-        <p>Hi ${params.parentName},</p>
-        ${intro}
-        <p>${params.teaser}</p>
-        ${bodyLine}
-        <p style="color: #64748b; font-size: 14px;">
-          <a href="${params.manageUrl}">Manage your subscription</a>
-        </p>
-        <p style="color: #64748b; font-size: 14px;">Sweet dreams from Dreamy Tales.</p>
-      </div>
-    `,
+    html: buildStoryDeliveryEmailHtml({
+      parentName: params.parentName,
+      childName: params.childName,
+      storyTitle: params.storyTitle,
+      teaser: params.teaser,
+      manageUrl: params.manageUrl,
+      isBirthday: birthday,
+      turningAge: params.turningAge,
+      includesNarration: withAudio,
+    }),
     pdfPath: params.pdfPath,
-    filename: `${params.storyTitle.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.pdf`,
+    pdfFilename: `${slug}.pdf`,
+    audioPath: withAudio ? params.audioPath : null,
+    audioFilename: `${slug}.mp3`,
   });
 }
 

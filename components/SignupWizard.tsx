@@ -19,11 +19,15 @@ import { ACTIVE_STORY_LANGUAGES, STORY_LANGUAGE_MARKETING_LABEL, getLanguageLabe
 import {
   annualSavings,
   annualTotal,
+  BASE_AUDIO_MONTHLY_ZAR,
+  BASE_MONTHLY_ZAR,
   formatPlanSummary,
   formatZar,
   monthlyTotal,
   recurringCharge,
+  STORY_PLANS,
   TRIAL_DAYS,
+  type StoryPlan,
 } from "@/lib/pricing";
 
 const EMPTY_CHILD: ChildProfileInput = {
@@ -52,6 +56,7 @@ export function SignupWizard() {
   const [children, setChildren] = useState<ChildProfileInput[]>([{ ...EMPTY_CHILD }]);
   const [activeChild, setActiveChild] = useState(0);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
+  const [storyPlan, setStoryPlan] = useState<StoryPlan>("pdf");
 
   useEffect(() => {
     trackAnalyticsEvent("signup_start");
@@ -82,6 +87,7 @@ export function SignupWizard() {
       ...parent,
       agreedToTerms: agreedToTerms as true,
       billingInterval,
+      storyPlan,
       children,
       affiliateCode: getStoredAffiliateCode() ?? undefined,
     };
@@ -145,8 +151,8 @@ export function SignupWizard() {
     form.submit();
   }
 
-  const monthly = monthlyTotal(children.length);
-  const charge = recurringCharge(children.length, billingInterval);
+  const monthly = monthlyTotal(children.length, storyPlan);
+  const charge = recurringCharge(children.length, billingInterval, storyPlan);
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -267,6 +273,55 @@ export function SignupWizard() {
           </div>
 
           <div className="mb-6">
+            <h3 className="font-medium text-navy mb-3">Choose your plan</h3>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {(["pdf", "pdf_audio"] as const).map((plan) => {
+                const base = plan === "pdf_audio" ? BASE_AUDIO_MONTHLY_ZAR : BASE_MONTHLY_ZAR;
+                const info = STORY_PLANS[plan];
+                return (
+                  <button
+                    key={plan}
+                    type="button"
+                    onClick={() => setStoryPlan(plan)}
+                    className={`rounded-2xl border-2 p-4 text-left transition-all ${
+                      storyPlan === plan
+                        ? plan === "pdf_audio"
+                          ? "border-purple bg-purple/5 shadow-sm"
+                          : "border-navy bg-navy/5 shadow-sm"
+                        : "border-navy/10 hover:border-navy/25"
+                    }`}
+                  >
+                    {plan === "pdf_audio" && (
+                      <span className="inline-block text-[10px] font-bold uppercase tracking-wide bg-purple/15 text-purple px-2 py-0.5 rounded-full mb-2">
+                        New
+                      </span>
+                    )}
+                    <p className="font-semibold text-navy">{info.label}</p>
+                    <p className="text-lg font-display text-navy mt-1">{formatZar(base)}/month</p>
+                    <p className="text-xs text-navy/50 mt-1">{info.description}</p>
+                    <ul className="mt-3 space-y-1 text-xs text-navy/70">
+                      {info.features.slice(0, 3).map((f) => (
+                        <li key={f}>✓ {f}</li>
+                      ))}
+                    </ul>
+                  </button>
+                );
+              })}
+            </div>
+            {storyPlan === "pdf_audio" && (
+              <p className="text-xs text-navy/55 mt-3 rounded-xl border border-navy/10 bg-moon/50 px-3 py-2.5 leading-relaxed">
+                Names and place names in the narration may not always sound exactly as you say them at home
+                — the voice reads the story text automatically.
+              </p>
+            )}
+            {children.length > 1 && (
+              <p className="text-xs text-navy/50 mt-2">
+                + {formatZar(50)}/month per additional child on either plan.
+              </p>
+            )}
+          </div>
+
+          <div className="mb-6">
             <h3 className="font-medium text-navy mb-3">Choose billing</h3>
             <div className="grid sm:grid-cols-2 gap-3">
               <button
@@ -295,9 +350,11 @@ export function SignupWizard() {
                   1 month free
                 </span>
                 <p className="font-semibold text-navy">Annual</p>
-                <p className="text-lg font-display text-navy mt-1">{formatZar(annualTotal(children.length))}/year</p>
+                <p className="text-lg font-display text-navy mt-1">
+                  {formatZar(annualTotal(children.length, storyPlan))}/year
+                </p>
                 <p className="text-xs text-navy/50 mt-1">
-                  Save {formatZar(annualSavings(children.length))} · 12 months for the price of 11
+                  Save {formatZar(annualSavings(children.length, storyPlan))} · 12 months for the price of 11
                 </p>
               </button>
             </div>
@@ -305,10 +362,12 @@ export function SignupWizard() {
 
           <div className="bg-moon rounded-xl p-4 mb-6 text-sm border border-navy/5">
             <p>
-              <strong>After {TRIAL_DAYS}-day free trial:</strong> {formatPlanSummary(children.length, billingInterval)}
+              <strong>After {TRIAL_DAYS}-day free trial:</strong>{" "}
+              {formatPlanSummary(children.length, billingInterval, storyPlan)}
             </p>
             <p className="text-navy/60 mt-1">
-              PayFast charge: <strong>{formatZar(charge)}</strong> per {billingInterval === "annual" ? "year" : "month"}
+              Plan: <strong>{STORY_PLANS[storyPlan].shortLabel}</strong> · PayFast charge:{" "}
+              <strong>{formatZar(charge)}</strong> per {billingInterval === "annual" ? "year" : "month"}
             </p>
           </div>
           <p className="text-navy/60 text-sm mb-6">

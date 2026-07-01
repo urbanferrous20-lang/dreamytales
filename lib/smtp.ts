@@ -137,12 +137,48 @@ export async function sendPdfEmail(params: {
   pdfPath: string;
   filename: string;
 }): Promise<void> {
+  await sendStoryDeliveryEmail({
+    to: params.to,
+    subject: params.subject,
+    html: params.html,
+    pdfPath: params.pdfPath,
+    pdfFilename: params.filename,
+  });
+}
+
+export async function sendStoryDeliveryEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  pdfPath: string;
+  pdfFilename: string;
+  audioPath?: string | null;
+  audioFilename?: string;
+}): Promise<void> {
   const pdfBuffer = await fs.readFile(params.pdfPath);
+  const attachments: Mail.Attachment[] = [
+    { filename: params.pdfFilename, content: pdfBuffer },
+  ];
+
+  if (params.audioPath) {
+    try {
+      const audioBuffer = await fs.readFile(params.audioPath);
+      attachments.push({
+        filename:
+          params.audioFilename ??
+          params.pdfFilename.replace(/\.pdf$/i, ".mp3"),
+        content: audioBuffer,
+      });
+    } catch {
+      // Audio missing on disk — still send PDF
+    }
+  }
+
   await sendSmtpMail({
     to: params.to,
     subject: params.subject,
     html: params.html,
-    attachments: [{ filename: params.filename, content: pdfBuffer }],
+    attachments,
   });
 }
 

@@ -61,11 +61,15 @@ export const FAQ_ITEMS = [
   },
   {
     q: "What about multiple children?",
-    a: `Add each child during signup. First child ${formatZar(BASE_MONTHLY_ZAR)}/month, each additional child ${formatZar(ADDON_CHILD_ZAR)}/month — each gets their own nightly story.`,
+    a: `Add each child during signup. Storybook PDF from ${formatZar(BASE_MONTHLY_ZAR)}/month (first child); PDF + Audio from R149/month. Each additional child is ${formatZar(ADDON_CHILD_ZAR)}/month — each gets their own nightly story.`,
+  },
+  {
+    q: "Is there an audio version?",
+    a: "Yes. Choose PDF + Audio at signup (R149/month for the first child). You receive the illustrated PDF plus a calm MP3 narration each night, with a gentle pause after each page — ideal when a parent wants a soothing voice to read aloud.",
   },
   {
     q: "Can I pay annually?",
-    a: `Yes. Choose annual billing at signup and pay for 11 months upfront — you get 12 months of stories (one month free). For example, one child is ${formatZar(annualTotal(1))}/year instead of ${formatZar(monthlyTotal(1) * 12)}.`,
+    a: `Yes. Choose annual billing at signup and pay for 11 months upfront — you get 12 months of stories (one month free). PDF: ${formatZar(annualTotal(1))}/year (one child). PDF + Audio: ${formatZar(annualTotal(1, "pdf_audio"))}/year (one child).`,
   },
   {
     q: "How is payment handled?",
