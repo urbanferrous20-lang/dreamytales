@@ -1,11 +1,11 @@
 /**
  * Test PayFast REST API auth (ping) and optionally cancel a subscription token.
  *
- * Usage:
- *   npx tsx scripts/test-payfast-api.ts
- *   npx tsx scripts/test-payfast-api.ts --cancel <payfast-token>
+ * Usage (local or Plesk):
+ *   npm run payfast:ping
+ *   npm run payfast:cancel -- <payfast-token>
  *
- * Requires PAYFAST_MERCHANT_ID, PAYFAST_PASSPHRASE in .env / .env.local
+ * Requires PAYFAST_MERCHANT_ID, PAYFAST_PASSPHRASE in .env (Plesk) or .env.local (dev).
  * Live: PAYFAST_SANDBOX=false
  *
  * If ping fails with 401, check PayFast dashboard → Settings → Integration:
@@ -33,7 +33,7 @@ async function main() {
     const cancel = await cancelPayfastSubscription(token);
     console.log(cancel.ok ? "   OK — check PayFast dashboard" : `   FAILED: ${cancel.error}`);
   } else {
-    console.log("\nTo test cancel: npx tsx scripts/test-payfast-api.ts --cancel <token>");
+    console.log("\nTo test cancel: npm run payfast:cancel -- <payfast-token>");
   }
 }
 

@@ -2,7 +2,7 @@
  * Manually attach a PayFast subscription token when ITN did not store it.
  *
  * Usage:
- *   npx tsx scripts/repair-payfast-token.ts user@example.com <payfast-token-uuid>
+ *   npm run repair:payfast-token -- user@example.com <payfast-token-uuid>
  *
  * Get the token from PayFast ITN logs, support, or your server logs when ITN fired.
  */
@@ -13,7 +13,7 @@ async function main() {
   const token = process.argv[3]?.trim();
 
   if (!email || !token) {
-    console.error("Usage: npx tsx scripts/repair-payfast-token.ts <email> <payfast-token>");
+    console.error("Usage: npm run repair:payfast-token -- <email> <payfast-token>");
     process.exit(1);
   }
 
