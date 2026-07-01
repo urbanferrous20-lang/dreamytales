@@ -298,7 +298,7 @@ STRUCTURE RULES:
 - Follow tonight's story TYPE arc above — it overrides any generic template.
 - Vary the opening (do not always start with magic appearing in the bedroom).
 - Page 10: sleepy goodnight at home with the child's name.
-Each page's sceneDescription should match the scene and show fantasy visually for illustration.
+Each page's sceneDescription should match the scene and show fantasy visually for illustration — vary the wonder; do not describe every page with glow, shimmer, or sparkle.
 Re-check every page against the content, safety, and fantasy rules before responding.`,
       },
     ],

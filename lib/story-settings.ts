@@ -18,14 +18,14 @@ const ADVENTURE_SETTINGS: StorySetting[] = [
     kind: "adventure",
     label: "Enchanted forest",
     prompt:
-      "Tonight's adventure visits a gentle enchanted forest — glowing mushrooms, whispering trees, friendly fireflies, soft moss paths. Magic feels cosy, not wild or scary.",
+      "Tonight's adventure visits a gentle enchanted forest — pale mushrooms, whispering trees, friendly fireflies, soft moss paths. Magic feels cosy, not wild or scary.",
   },
   {
     key: "starlit_sea",
     kind: "adventure",
     label: "Starlit sea",
     prompt:
-      "Tonight's adventure visits a calm starlit sea — moonlit waves, a friendly dolphin or turtle guide, bioluminescent sparkles in shallow water, a sandy cove for the sleepy ending.",
+      "Tonight's adventure visits a calm starlit sea — moonlit waves, a friendly dolphin or turtle guide, gentle ripples in shallow water, a sandy cove for the sleepy ending.",
   },
   {
     key: "cloud_kingdom",
@@ -53,7 +53,7 @@ const ADVENTURE_SETTINGS: StorySetting[] = [
     kind: "adventure",
     label: "Magical library",
     prompt:
-      "Tonight's adventure enters a magical library — books that glow, paper birds, ladders into soft light, stories that flutter like moths. Quiet wonder only.",
+      "Tonight's adventure enters a magical library — books that hum and rustle, paper birds, warm lamplight, stories that flutter like moths. Quiet wonder only.",
   },
   {
     key: "riverboat_journey",
@@ -259,7 +259,7 @@ export function getBirthdayStorySetting(child: ChildProfileInput, turningAge: nu
     prompt:
       `Tonight is ${child.name}'s BIRTHDAY — they are turning ${turningAge} today. ` +
       `This is a special once-a-year birthday story rooted in ${city}, beginning at ${place}. ` +
-      "Weave a gentle magical birthday celebration: enchanted candles, a softly glowing cake or starlight wishes, " +
+      "Weave a gentle magical birthday celebration: candlelight, a special cake or starlight wishes, " +
       "surprise cameos from people and pets in their profile (best friend, siblings, pet) if listed, " +
       "and small joyful moments tied to their interests. " +
       "Celebratory in the middle pages but MUST wind down to a calm, sleepy birthday-night close — this is still bedtime reading. " +

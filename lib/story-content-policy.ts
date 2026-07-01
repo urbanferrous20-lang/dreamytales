@@ -23,17 +23,19 @@ export function getStoryContentPolicy(age: number): string {
 export function getStoryFantasyPolicy(age: number): string {
   const intensity =
     age <= 5
-      ? "Keep magic simple and cosy: talking animals, friendly tiny spirits, glowing toys, soft moonlight secrets."
+      ? "Keep magic simple and cosy: talking animals, friendly tiny spirits, toys that come alive for a moment, quiet moonlight secrets."
       : age <= 8
-        ? "Use moderate fantasy: magical guides, enchanted familiar places, gentle transformations, whimsical SA-flavoured creatures."
-        : "Use richer fantasy: hidden magical layers in the real city, folklore-inspired allies, wonder-filled quests — still calm, never frightening.";
+        ? "Use moderate fantasy: magical guides, familiar places with a hidden twist, gentle transformations, whimsical SA-flavoured creatures."
+        : "Use richer fantasy: hidden layers in the real city, folklore-inspired allies, wonder-filled quests — still calm, never frightening.";
 
   return `FANTASY & WONDER (required in every story):
 - Every story MUST include meaningful fantasy or magical wonder — not realistic slice-of-life only.
 - The child has a real home in South Africa, but tonight's primary setting (provided separately) may be a forest, coast, mountains, cloud kingdom, magical library, or their neighbourhood — vary locations across nights.
 - Tie enchantment to the child's interests, favourite toys, pets, and character-bible recurring elements.
 - ${intensity}
-- Good elements: friendly magical companions, enchanted everyday objects, whispering wind or star guides, unicorns, small dragons, talking clouds, glowing paths, paper planes that listen, dreams that softly touch the waking world.
+- Good elements: friendly companions, enchanted everyday objects, whispering wind or star guides, unicorns, small dragons, talking clouds, paper planes that listen, dreams that softly touch the waking world, silly surprises, gentle puzzles.
+- Vary how wonder shows up — humour, kindness, discovery, a talking animal, a secret door, a dream twist. Do NOT lean on glow, shimmer, sparkle, radiance, or luminous light in every scene.
+- At most ONE page may use a soft glow or sparkle if the plot truly needs it; most pages should use other kinds of wonder.
 - Fantasy serves bedtime: build wonder through the middle pages, then wind down to a peaceful, sleepy close on page 10.
 - Avoid: horror, scary monsters, dark magic, chases, peril, death, bleak tone, or anything that would keep a child awake.`;
 }
@@ -43,7 +45,7 @@ export function getIllustrationContentPolicy(): string {
     "Inclusive, neutral, child-safe illustration.",
     "No stereotypes or biased portrayals by race, ethnicity, culture, religion, gender, or appearance.",
     "Friendly, dignified characters; no scary, violent, or adult imagery.",
-    "Include gentle fantasy visuals where the scene allows: soft glow, magical companions, enchanted objects, whimsical SA settings.",
+    "Include gentle fantasy visuals where the scene allows: magical companions, enchanted objects, whimsical SA settings — avoid defaulting every scene to glowing or sparkly light.",
   ].join(" ");
 }
 

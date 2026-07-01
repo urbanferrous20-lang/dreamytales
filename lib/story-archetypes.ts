@@ -20,7 +20,7 @@ export const STORY_ARCHETYPES: StoryArchetype[] = [
     key: "helper",
     label: "Helper",
     outline:
-      "Pages 1–2: calm start; someone small needs a tiny favour (lost glow, tangled ribbon, lonely pebble). " +
+      "Pages 1–2: calm start; someone small needs a tiny favour (lost button, tangled ribbon, lonely pebble). " +
       "Pages 3–7: child helps with kindness and cleverness — one setback, one retry. " +
       "Pages 8–9: helper and helped share a warm moment. Page 10: home, proud and drowsy.",
   },
@@ -44,7 +44,7 @@ export const STORY_ARCHETYPES: StoryArchetype[] = [
     key: "gentle_mystery",
     label: "Gentle mystery",
     outline:
-      "Pages 1–2: a tiny puzzle appears (a sound, a trail of sparkles, a note only they can read). " +
+      "Pages 1–2: a tiny puzzle appears (a sound, a trail of footprints, a note only they can read). " +
       "Pages 3–7: three soft clues — no fear, no urgency. " +
       "Pages 8–9: sweet, obvious reveal (never scary). Page 10: mystery solved, eyes closing.",
   },

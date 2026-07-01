@@ -129,5 +129,6 @@ FORBIDDEN tonight unless this archetype truly requires it:
 - Opening with generic "spark of magic in the bedroom" (vary: dream, toy, sound, letter, pet, window light, etc.)
 - Reusing the same friendly guide creature type from a recent story (dragon, firefly, owl, cloud — pick something new)
 - Same "gentle problem → two attempts → small climax" skeleton if a recent story already used it
-- Centring the plot on a signup interest (dinosaurs, princesses, etc.) unless garnish explicitly allows one background nod`;
+- Centring the plot on a signup interest (dinosaurs, princesses, etc.) unless garnish explicitly allows one background nod
+- Overusing glow, shimmer, sparkle, radiance, luminous, or "magical light" — use other wonder instead (talking creatures, silly mishaps, secret places, kindness, gentle comedy)`;
 }
