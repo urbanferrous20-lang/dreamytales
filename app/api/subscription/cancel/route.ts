@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { ANALYTICS_EVENTS, logAnalyticsEvent } from "@/lib/analytics";
 import { prisma } from "@/lib/db";
-import { sendCancellationEmail } from "@/lib/email";
+import { sendAdminAlert, sendCancellationEmail } from "@/lib/email";
 import { cancelPayfastSubscription } from "@/lib/payfast";
 import { getCancellationTerms } from "@/lib/subscription-cancellation";
 
@@ -24,8 +24,50 @@ export async function POST() {
   const terms = getCancellationTerms(subscription);
   const { accessEndsAt } = terms;
 
-  if (subscription.payfastToken) {
-    await cancelPayfastSubscription(subscription.payfastToken);
+  let payfastCancelled = false;
+  if (!subscription.payfastToken) {
+    console.error(
+      "Subscription cancel: no payfastToken stored",
+      subscription.id,
+      subscription.user.email
+    );
+    await sendAdminAlert(
+      "PayFast cancel skipped — no subscription token",
+      [
+        "A parent cancelled in Dreamy Tales but we have no PayFast token on file.",
+        "Billing was NOT stopped via API — cancel manually in PayFast → Customer Subscriptions.",
+        "",
+        `Email: ${subscription.user.email}`,
+        `Subscription ID: ${subscription.id}`,
+        `Status: ${subscription.status} → cancel_pending`,
+        `Access ends: ${accessEndsAt.toISOString()}`,
+      ].join("\n")
+    ).catch(() => {});
+  } else {
+    const payfast = await cancelPayfastSubscription(subscription.payfastToken);
+    payfastCancelled = payfast.ok;
+    if (!payfast.ok) {
+      console.error(
+        "PayFast cancel API failed",
+        subscription.id,
+        subscription.user.email,
+        payfast.error
+      );
+      await sendAdminAlert(
+        "PayFast cancel API failed",
+        [
+          "A parent cancelled in Dreamy Tales but the PayFast API call failed.",
+          "Cancel manually in PayFast → Customer Subscriptions if it still shows active.",
+          "",
+          `Email: ${subscription.user.email}`,
+          `Subscription ID: ${subscription.id}`,
+          `PayFast token: ${subscription.payfastToken}`,
+          payfast.error ? `Error: ${payfast.error}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n")
+      ).catch(() => {});
+    }
   }
 
   await prisma.subscription.update({
@@ -57,5 +99,10 @@ export async function POST() {
     // Email failure should not block cancellation
   }
 
-  return NextResponse.json({ success: true, accessEndsAt: accessEndsAt.toISOString() });
+  return NextResponse.json({
+    success: true,
+    accessEndsAt: accessEndsAt.toISOString(),
+    payfastCancelled,
+    payfastTokenStored: Boolean(subscription.payfastToken),
+  });
 }

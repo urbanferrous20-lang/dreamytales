@@ -19,7 +19,7 @@ export async function processDueCancellations(): Promise<{ processed: number; er
     const token = subscription.payfastToken!;
     const cancelled = await cancelPayfastSubscription(token);
 
-    if (!cancelled) {
+    if (!cancelled.ok) {
       errors.push(`PayFast cancellation failed for subscription ${subscription.id} (may already be cancelled)`);
       await sendAdminAlert(
         "PayFast cancellation failed",

@@ -294,9 +294,14 @@ export function buildSubscriptionFormData(params: PayfastCheckoutParams): Record
   return data;
 }
 
-export async function cancelPayfastSubscription(token: string): Promise<boolean> {
+export async function cancelPayfastSubscription(
+  token: string
+): Promise<{ ok: boolean; error?: string }> {
   const result = await payfastSubscriptionRequest("PUT", `/subscriptions/${token}/cancel`);
-  return result.ok;
+  if (!result.ok) {
+    console.error("PayFast cancel subscription failed:", result.error);
+  }
+  return result;
 }
 
 export async function updatePayfastSubscription(params: {

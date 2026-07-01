@@ -9,6 +9,11 @@ import {
 } from "@/lib/payfast";
 import { activateSignup } from "@/lib/signup-activate";
 import { recordAffiliateConversionOnPaidPayment } from "@/lib/affiliate";
+import {
+  alertMissingPayfastToken,
+  extractPayfastSubscriptionToken,
+  persistPayfastSubscriptionToken,
+} from "@/lib/payfast-subscription-token";
 import type { Prisma } from "@prisma/client";
 
 type UserWithSubscription = Prisma.UserGetPayload<{ include: { subscription: true } }>;
@@ -64,14 +69,15 @@ export async function POST(request: NextRequest) {
 
   const signupId = data.custom_str1 ?? data.m_payment_id;
   const paymentStatus = data.payment_status;
-  const token = data.token;
+  const token = extractPayfastSubscriptionToken(data);
   const email = data.email_address?.trim().toLowerCase();
+  const isSubscriptionItn = data.subscription_type === "1" || data.subscription_type === "2";
 
   if (paymentStatus === "COMPLETE") {
     let user: UserWithSubscription | null = null;
 
     if (signupId) {
-      const activated = await activateSignup(signupId, token);
+      const activated = await activateSignup(signupId, token ?? undefined);
       if (!activated) {
         const pendingStill = await prisma.pendingSignup.findUnique({ where: { id: signupId } });
         if (pendingStill) {
@@ -87,22 +93,28 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      user = await resolvePaymentUser({ signupId, email, token });
+      user = await resolvePaymentUser({ signupId, email, token: token ?? undefined });
     }
 
-    if (user?.subscription && token) {
+    if (user?.subscription) {
       const interval = user.subscription.billingInterval === "annual" ? "annual" : "monthly";
       const fallbackDays = interval === "annual" ? 365 : 30;
       await prisma.subscription.update({
         where: { id: user.subscription.id },
         data: {
           status: user.subscription.status === "pending" ? "trial" : user.subscription.status,
-          payfastToken: token,
+          ...(token ? { payfastToken: token } : {}),
           nextBillingDate: data.billing_date
             ? new Date(data.billing_date)
             : addDays(new Date(), fallbackDays),
         },
       });
+    } else if (token) {
+      await persistPayfastSubscriptionToken({ token, signupId, email });
+    }
+
+    if (isSubscriptionItn && !token) {
+      await alertMissingPayfastToken({ signupId, email, paymentStatus });
     }
 
     const amount = parseFloat(data.amount_gross ?? data.amount ?? "0");
