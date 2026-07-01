@@ -26,9 +26,10 @@ export function getPayfastValidateUrl(): string {
 }
 
 export function getPayfastApiBase(): string {
-  const base = "https://api.payfast.co.za";
-  return isSandbox() ? `${base}?testing=true` : base;
+  return "https://api.payfast.co.za";
 }
+
+export { buildPayfastApiUrl, payfastApiTimestampSast, generatePayfastApiSignature };
 
 function getMerchantConfig() {
   const merchantId = process.env.PAYFAST_MERCHANT_ID;
@@ -132,21 +133,6 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;");
 }
 
-/** PayFast REST API signatures use alphabetical key order. */
-export function generatePayfastSignature(
-  data: Record<string, string>,
-  passphrase?: string
-): string {
-  const pass = passphrase ?? getMerchantConfig().passphrase;
-  const ordered = Object.keys(data)
-    .filter((k) => data[k] !== "" && k !== "signature")
-    .sort();
-  const paramString = ordered.map((k) => `${k}=${encodePayfastValue(data[k])}`).join("&");
-  return crypto
-    .createHash("md5")
-    .update(`${paramString}&passphrase=${encodePayfastValue(pass)}`)
-    .digest("hex");
-}
 
 /**
  * Checkout / onsite form signatures must follow PayFast attribute order.
@@ -246,6 +232,15 @@ export function verifyPayfastItnSignature(
 }
 
 import type { BillingInterval } from "@/lib/pricing";
+import {
+  buildPayfastApiUrl,
+  cancelPayfastSubscription as cancelPayfastSubscriptionApi,
+  fetchPayfastSubscription as fetchPayfastSubscriptionApi,
+  generatePayfastApiSignature,
+  payfastApiTimestampSast,
+  pingPayfastApi as pingPayfastApiRequest,
+  updatePayfastSubscription as updatePayfastSubscriptionApi,
+} from "@/lib/payfast-subscription-api";
 
 export type PayfastCheckoutParams = {
   mPaymentId: string;
@@ -294,10 +289,20 @@ export function buildSubscriptionFormData(params: PayfastCheckoutParams): Record
   return data;
 }
 
+export async function pingPayfastApi(): Promise<{ ok: boolean; error?: string }> {
+  return pingPayfastApiRequest();
+}
+
+export async function fetchPayfastSubscription(
+  token: string
+): Promise<{ ok: boolean; error?: string; data?: unknown }> {
+  return fetchPayfastSubscriptionApi(token);
+}
+
 export async function cancelPayfastSubscription(
   token: string
 ): Promise<{ ok: boolean; error?: string }> {
-  const result = await payfastSubscriptionRequest("PUT", `/subscriptions/${token}/cancel`);
+  const result = await cancelPayfastSubscriptionApi(token);
   if (!result.ok) {
     console.error("PayFast cancel subscription failed:", result.error);
   }
@@ -309,49 +314,7 @@ export async function updatePayfastSubscription(params: {
   recurringAmount: string;
   billingInterval: BillingInterval;
 }): Promise<{ ok: boolean; error?: string }> {
-  const frequency = params.billingInterval === "annual" ? "6" : "3";
-  return payfastSubscriptionRequest("PATCH", `/subscriptions/${params.token}/update`, {
-    amount: params.recurringAmount,
-    recurring_amount: params.recurringAmount,
-    frequency,
-    cycles: "0",
-  });
-}
-
-async function payfastSubscriptionRequest(
-  method: "PUT" | "PATCH",
-  path: string,
-  body?: Record<string, string>
-): Promise<{ ok: boolean; error?: string }> {
-  const { merchantId, passphrase } = getMerchantConfig();
-  const timestamp = new Date().toISOString().slice(0, 19);
-
-  const signatureData: Record<string, string> = {
-    "merchant-id": merchantId,
-    timestamp,
-    version: "v1",
-    ...(body ?? {}),
-  };
-  const signature = generatePayfastSignature(signatureData, passphrase);
-
-  const url = `${getPayfastApiBase()}${path}`;
-  const response = await fetch(url, {
-    method,
-    headers: {
-      "merchant-id": merchantId,
-      version: "v1",
-      timestamp,
-      signature,
-      ...(body ? { "Content-Type": "application/json" } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    return { ok: false, error: text || response.statusText };
-  }
-  return { ok: true };
+  return updatePayfastSubscriptionApi(params);
 }
 
 export async function validateItnWithPayfast(postData: string): Promise<boolean> {

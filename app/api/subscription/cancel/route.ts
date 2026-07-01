@@ -62,7 +62,13 @@ export async function POST() {
           `Email: ${subscription.user.email}`,
           `Subscription ID: ${subscription.id}`,
           `PayFast token: ${subscription.payfastToken}`,
-          payfast.error ? `Error: ${payfast.error}` : "",
+          payfast.error
+            ? `Error: ${payfast.error}`
+            : "",
+          "",
+          "If you see 401 Merchant authorization failed:",
+          "- Confirm PAYFAST_PASSPHRASE matches PayFast dashboard (live, not sandbox)",
+          "- Whitelist your Plesk server outbound IP in PayFast → Settings → Integration",
         ]
           .filter(Boolean)
           .join("\n")
