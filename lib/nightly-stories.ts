@@ -21,6 +21,67 @@ import {
   isWithinStoryDeliveryWindow,
 } from "@/lib/story-delivery-window";
 
+/** If a run stalls, allow retry after this long (ms). */
+const GENERATION_STALE_MS = 45 * 60 * 1000;
+const GENERATION_PLACEHOLDER_PDF = "__generating__";
+
+type StorySlot = {
+  sentAt: Date | null;
+  generationStartedAt: Date | null;
+};
+
+function isStoryGenerationInProgress(story: StorySlot): boolean {
+  if (story.sentAt) return false;
+  if (!story.generationStartedAt) return false;
+  return Date.now() - story.generationStartedAt.getTime() < GENERATION_STALE_MS;
+}
+
+function isStoryPendingTonight(story: StorySlot | null): boolean {
+  if (!story) return true;
+  if (story.sentAt) return false;
+  if (isStoryGenerationInProgress(story)) return false;
+  return true;
+}
+
+/** Atomically claim tonight's slot so overlapping cron runs don't double-send. */
+async function tryClaimStoryGeneration(childId: string, storyDate: Date): Promise<boolean> {
+  const now = new Date();
+  const staleBefore = new Date(Date.now() - GENERATION_STALE_MS);
+
+  const updated = await prisma.story.updateMany({
+    where: {
+      childId,
+      storyDate,
+      sentAt: null,
+      OR: [{ generationStartedAt: null }, { generationStartedAt: { lt: staleBefore } }],
+    },
+    data: { generationStartedAt: now },
+  });
+  if (updated.count > 0) return true;
+
+  const existing = await prisma.story.findUnique({
+    where: { childId_storyDate: { childId, storyDate } },
+    select: { sentAt: true, generationStartedAt: true },
+  });
+  if (existing) return false;
+
+  try {
+    await prisma.story.create({
+      data: {
+        childId,
+        storyDate,
+        title: "Generating…",
+        summary: "Story generation in progress",
+        pdfPath: GENERATION_PLACEHOLDER_PDF,
+        generationStartedAt: now,
+      },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function getStoryDateSast(): Date {
   const now = new Date();
   const sast = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Johannesburg" }));
@@ -127,8 +188,10 @@ export async function countPendingNightlyStories(storyDate = getStoryDateSast())
   for (const child of children) {
     const existing = await prisma.story.findUnique({
       where: { childId_storyDate: { childId: child.id, storyDate } },
+      select: { sentAt: true, generationStartedAt: true },
     });
-    if (!existing?.sentAt) pending += 1;
+    if (!isStoryPendingTonight(existing)) continue;
+    pending += 1;
   }
 
   return pending;
@@ -140,8 +203,13 @@ export async function processNightlyStoryForChild(
 ): Promise<{ skipped?: boolean; success?: boolean; title?: string; setting?: string; archetype?: string; birthday?: boolean; error?: string }> {
   const existing = await prisma.story.findUnique({
     where: { childId_storyDate: { childId: child.id, storyDate } },
+    select: { sentAt: true, generationStartedAt: true },
   });
   if (existing?.sentAt) return { skipped: true };
+  if (isStoryGenerationInProgress(existing)) return { skipped: true };
+
+  const claimed = await tryClaimStoryGeneration(child.id, storyDate);
+  if (!claimed) return { skipped: true };
 
   try {
     const { childInput, characterBible: existingBible } = await prepareChildForStory(child);
@@ -320,7 +388,7 @@ export async function processNightlyStoryForChild(
 
     await prisma.story.update({
       where: { id: storyRecord.id },
-      data: { sentAt: new Date() },
+      data: { sentAt: new Date(), generationStartedAt: null },
     });
 
     return {
@@ -332,6 +400,12 @@ export async function processNightlyStoryForChild(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    await prisma.story
+      .updateMany({
+        where: { childId: child.id, storyDate, sentAt: null },
+        data: { generationStartedAt: null },
+      })
+      .catch(() => {});
     await sendAdminAlert(
       "Nightly story failed",
       `Child ${child.name} (${child.id}): ${message}`
@@ -359,8 +433,9 @@ export async function processNextNightlyStory(storyDate = getStoryDateSast()) {
   for (const child of children) {
     const existing = await prisma.story.findUnique({
       where: { childId_storyDate: { childId: child.id, storyDate } },
+      select: { sentAt: true, generationStartedAt: true },
     });
-    if (existing?.sentAt) continue;
+    if (!isStoryPendingTonight(existing)) continue;
 
     const result = await processNightlyStoryForChild(child, storyDate);
     const remaining = await countPendingNightlyStories(storyDate);

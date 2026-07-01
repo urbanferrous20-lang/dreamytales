@@ -116,6 +116,8 @@ model Story {
   audioPath String?
   storyDate DateTime
   sentAt    DateTime?
+  /** Set when generation starts — prevents duplicate cron runs while a story is in progress. */
+  generationStartedAt DateTime?
   createdAt DateTime     @default(now())
   reviews   StoryReview[]
 

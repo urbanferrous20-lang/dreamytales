@@ -19,7 +19,7 @@ export async function cleanupExpiredPdfs(): Promise<{
 
   const expired = await prisma.story.findMany({
     where: {
-      pdfPath: { not: "" },
+      pdfPath: { notIn: ["", "__generating__"] },
       OR: [
         { sentAt: { lt: cutoff } },
         { sentAt: null, createdAt: { lt: cutoff } },
