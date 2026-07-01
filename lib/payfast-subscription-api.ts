@@ -62,17 +62,16 @@ async function payfastApiRequest(
   path: string,
   options?: {
     body?: Record<string, string>;
-    subscriptionToken?: string;
   }
 ): Promise<{ ok: boolean; error?: string; data?: unknown }> {
   const { merchantId, passphrase } = getMerchantConfig();
   const timestamp = payfastApiTimestampSast();
 
+  // Subscription token goes in the URL path only — not in the signature (WooCommerce / PayFast API).
   const signatureData: Record<string, string> = {
     "merchant-id": merchantId,
     timestamp,
     version: "v1",
-    ...(options?.subscriptionToken ? { token: options.subscriptionToken } : {}),
     ...(options?.body ?? {}),
   };
   const signature = generatePayfastApiSignature(signatureData, passphrase);
@@ -110,13 +109,13 @@ export async function pingPayfastApi(): Promise<{ ok: boolean; error?: string }>
 export async function fetchPayfastSubscription(
   token: string
 ): Promise<{ ok: boolean; error?: string; data?: unknown }> {
-  return payfastApiRequest("GET", `/subscriptions/${token}/fetch`, { subscriptionToken: token });
+  return payfastApiRequest("GET", `/subscriptions/${encodeURIComponent(token)}/fetch`);
 }
 
 export async function cancelPayfastSubscription(
   token: string
 ): Promise<{ ok: boolean; error?: string }> {
-  return payfastApiRequest("PUT", `/subscriptions/${token}/cancel`, { subscriptionToken: token });
+  return payfastApiRequest("PUT", `/subscriptions/${encodeURIComponent(token)}/cancel`);
 }
 
 export async function updatePayfastSubscription(params: {
@@ -125,8 +124,7 @@ export async function updatePayfastSubscription(params: {
   billingInterval: BillingInterval;
 }): Promise<{ ok: boolean; error?: string }> {
   const frequency = params.billingInterval === "annual" ? "6" : "3";
-  return payfastApiRequest("PATCH", `/subscriptions/${params.token}/update`, {
-    subscriptionToken: params.token,
+  return payfastApiRequest("PATCH", `/subscriptions/${encodeURIComponent(params.token)}/update`, {
     body: {
       amount: params.recurringAmount,
       recurring_amount: params.recurringAmount,

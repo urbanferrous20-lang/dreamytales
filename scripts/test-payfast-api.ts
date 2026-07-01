@@ -14,6 +14,11 @@
 import "dotenv/config";
 import { cancelPayfastSubscription, fetchPayfastSubscription, pingPayfastApi } from "../lib/payfast-subscription-api";
 
+function normalizeToken(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  return raw.replace(/^<|>$/g, "").trim();
+}
+
 async function main() {
   console.log("PayFast sandbox:", process.env.PAYFAST_SANDBOX !== "false" ? "yes" : "no (live)");
 
@@ -22,7 +27,7 @@ async function main() {
   console.log(ping.ok ? "   OK" : `   FAILED: ${ping.error}`);
 
   const cancelIdx = process.argv.indexOf("--cancel");
-  const token = cancelIdx >= 0 ? process.argv[cancelIdx + 1]?.trim() : undefined;
+  const token = normalizeToken(cancelIdx >= 0 ? process.argv[cancelIdx + 1] : undefined);
 
   if (token) {
     console.log("\n2. Fetch subscription…");
@@ -33,7 +38,8 @@ async function main() {
     const cancel = await cancelPayfastSubscription(token);
     console.log(cancel.ok ? "   OK — check PayFast dashboard" : `   FAILED: ${cancel.error}`);
   } else {
-    console.log("\nTo test cancel: npm run payfast:cancel -- <payfast-token>");
+    console.log("\nTo test cancel: npm run payfast:cancel -- 50e1e8e1-2493-4085-afc2-da0a65972474");
+    console.log("(no angle brackets around the token)");
   }
 }
 
