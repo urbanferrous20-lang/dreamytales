@@ -19,6 +19,7 @@ import {
 import { SiteReviewForm } from "@/components/SiteReviewForm";
 import { StoryReviewForm } from "@/components/StoryReviewForm";
 import { PlanUpgradePanel } from "@/components/PlanUpgradePanel";
+import { getCancellationStatusLabel } from "@/lib/subscription-cancellation";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -47,6 +48,7 @@ export default async function DashboardPage() {
   const sub = user.subscription;
   const isActive = sub && ["trial", "active", "cancel_pending"].includes(sub.status);
   const storyPlan = ((sub?.storyPlan as StoryPlan) ?? "pdf") as StoryPlan;
+  const cancelLabel = sub ? getCancellationStatusLabel(sub) : undefined;
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
@@ -70,7 +72,7 @@ export default async function DashboardPage() {
               <p>
                 Status:{" "}
                 <span className="font-medium capitalize">
-                  {sub.status === "cancel_pending" ? "Cancelling (1 month notice)" : sub.status}
+                  {sub.status === "cancel_pending" ? cancelLabel : sub.status}
                 </span>
               </p>
               <p>

@@ -3,6 +3,18 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { CancelForm } from "@/components/CancelForm";
+import { getCancellationTerms } from "@/lib/subscription-cancellation";
+
+function renderSummary(summary: string) {
+  const parts = summary.split(/\*\*(.*?)\*\*/g);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <strong key={i}>{part}</strong>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
 
 export default async function CancelPage() {
   const session = await getSession();
@@ -16,20 +28,16 @@ export default async function CancelPage() {
     redirect("/dashboard");
   }
 
-  const accessEndsAt = new Date();
-  accessEndsAt.setMonth(accessEndsAt.getMonth() + 1);
+  const terms = getCancellationTerms(subscription);
 
   return (
     <div className="max-w-lg mx-auto py-16 px-4">
       <h1 className="font-display text-3xl text-navy mb-4">Cancel subscription</h1>
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-8 text-sm text-navy/80">
-        <p className="mb-2">
-          <strong>1 month&apos;s notice applies.</strong> If you cancel today, your stories will continue until{" "}
-          <strong>{accessEndsAt.toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}</strong>.
-        </p>
-        <p>You will not be charged after that date. Billing will be cancelled automatically.</p>
+        <p className="mb-2">{renderSummary(terms.summary)}</p>
+        <p>{terms.billingNote}</p>
       </div>
-      <CancelForm accessEndsAt={accessEndsAt.toISOString()} />
+      <CancelForm accessEndsAt={terms.accessEndsAt.toISOString()} />
       <Link href="/dashboard" className="block text-center text-sm text-navy/50 mt-6 hover:text-navy">
         ← Back to dashboard
       </Link>

@@ -70,10 +70,11 @@ export default function TermsPage() {
         <div>
           <h2 className="font-display text-xl text-navy mb-2">5. Cancellation</h2>
           <p>
-            You may cancel your subscription at any time through your dashboard. Cancellation requires{" "}
-            <strong>one calendar month&apos;s notice</strong>. You will continue to receive stories until the
-            end of your notice period. No further charges will be made after that date. We will cancel your
-            PayFast recurring billing on your access end date.
+            You may cancel your subscription at any time through your dashboard. During your{" "}
+            <strong>free trial</strong>, cancellation takes effect when the trial ends — you will not be
+            charged. After the trial, paid subscriptions continue until the{" "}
+            <strong>end of the current calendar month</strong> in which you cancel. No further charges will
+            be made after that date. We cancel PayFast recurring billing when you confirm cancellation.
           </p>
         </div>
 

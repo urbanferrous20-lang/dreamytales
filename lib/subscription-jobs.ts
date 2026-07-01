@@ -20,12 +20,11 @@ export async function processDueCancellations(): Promise<{ processed: number; er
     const cancelled = await cancelPayfastSubscription(token);
 
     if (!cancelled) {
-      errors.push(`PayFast cancellation failed for subscription ${subscription.id}`);
+      errors.push(`PayFast cancellation failed for subscription ${subscription.id} (may already be cancelled)`);
       await sendAdminAlert(
         "PayFast cancellation failed",
-        `Subscription ${subscription.id} — manual intervention needed`
+        `Subscription ${subscription.id} — marking cancelled locally; verify PayFast if needed`
       );
-      continue;
     }
 
     await prisma.subscription.update({
