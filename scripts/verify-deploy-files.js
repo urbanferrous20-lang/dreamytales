@@ -50,7 +50,11 @@ function checkFileMustNotContain(relativePath, forbidden) {
 checkFile("prisma/schema.prisma", ["generator client", "datasource db", "model User"]);
 checkFileMustNotContain("prisma/schema.prisma", ["JsonLdProps", "application/ld+json"]);
 checkFile("components/JsonLd.tsx", ["export function JsonLd"]);
-checkFile("start.js", ["next/dist/cli/next-start"]);
+checkFile("start.js", [
+  "next/dist/bin/next",
+  "0.0.0.0",
+  "[dreamy-tales] Starting Next.js",
+]);
 checkFile("package.json", ['"name": "dreamy-tales"']);
 
 console.log("\nDreamy Tales deploy file check");
