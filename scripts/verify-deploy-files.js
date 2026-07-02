@@ -51,7 +51,7 @@ checkFile("prisma/schema.prisma", ["generator client", "datasource db", "model U
 checkFileMustNotContain("prisma/schema.prisma", ["JsonLdProps", "application/ld+json"]);
 checkFile("components/JsonLd.tsx", ["export function JsonLd"]);
 checkFile("start.js", [
-  "next/dist/bin/next",
+  'dist", "bin", "next"',
   "0.0.0.0",
   "[dreamy-tales] Starting Next.js",
 ]);
