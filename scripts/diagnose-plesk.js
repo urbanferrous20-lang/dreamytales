@@ -9,6 +9,29 @@ const path = require("path");
 const root = process.cwd();
 const lines = [];
 
+function loadEnvFile() {
+  const envPath = path.join(root, ".env");
+  if (!fs.existsSync(envPath)) return false;
+  for (const line of fs.readFileSync(envPath, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let val = trimmed.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1);
+    }
+    if (process.env[key] === undefined) process.env[key] = val;
+  }
+  return true;
+}
+
+loadEnvFile();
+
 function ok(msg) {
   lines.push(`OK  ${msg}`);
 }
@@ -38,12 +61,12 @@ if (fs.existsSync(path.join(root, "node_modules", "next"))) {
 }
 
 if (fs.existsSync(path.join(root, ".env"))) {
-  ok(".env file exists");
+  ok(".env file exists (variables loaded for this check)");
 } else {
   fail(".env file missing in httpdocs (DATABASE_URL and secrets)");
 }
 
-info(`PORT=${process.env.PORT ?? "(not set — start.js defaults to 3000)"}`);
+info(`PORT=${process.env.PORT ?? "(not set in this shell — Plesk sets it when the app runs)"}`);
 info(`HOSTNAME=${process.env.HOSTNAME ?? "(not set)"}`);
 if (process.env.HOSTNAME) {
   info("Do not bind the app to HOSTNAME — start.js ignores it on purpose.");
@@ -89,11 +112,18 @@ function isSmtpConfigured() {
   return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 }
 
+const startJs = path.join(root, "start.js");
+const nextBin = path.join(root, "node_modules", "next", "dist", "bin", "next");
+if (fs.existsSync(startJs)) ok("start.js exists");
+else fail("start.js missing in httpdocs");
+if (fs.existsSync(nextBin)) ok("next CLI binary exists");
+else fail("next CLI binary missing — run NPM install");
+
 try {
   require("next/dist/cli/next-start");
-  ok("next/dist/cli/next-start loads");
+  ok("next start module loads");
 } catch (error) {
-  fail(`next start module: ${error.message}`);
+  info(`next/dist/cli/next-start: ${error.message} (start.js uses next CLI binary instead)`);
 }
 
 console.log("\nDreamy Tales Plesk diagnostics\n");
