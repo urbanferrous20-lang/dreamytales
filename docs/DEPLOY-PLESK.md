@@ -252,6 +252,7 @@ Check response JSON and parent email with PDF attachment.
 | `schema.prisma` / `JsonLd` Prisma error | Run `node scripts/verify-deploy-files.js` — re-upload ZIP; delete all of `httpdocs` first |
 | 502 / Incomplete response from application | Run **`node scripts/diagnose-plesk.js`** in Run Node.js commands. Then **NPM install** → Run script **`build`** → **Restart Node.js**. Never bind to `HOSTNAME` in start.js. Test `/api/health` |
 | 502 / app not running | Node.js enabled, `start.js` set, Restart Node.js |
+| Build OK but site still down / parking page | See **Site down after build** below |
 | Build fails | Node 20+, enough disk/RAM; run `npm run build` in Plesk commands |
 | SMTP auth failed | Full email as username, port 465 + `SMTP_SECURE=true` |
 | PayFast ITN fails | HTTPS live, `NEXT_PUBLIC_APP_URL` correct |
@@ -261,6 +262,21 @@ Check response JSON and parent email with PDF attachment.
 | `nodenv: node: command not found` (npm error 127) | Enable Node.js in Plesk, pick version **22**, use **NPM install** button — not SSH. Delete `node_modules` first if partial install. See below. |
 
 Contact 1-grid support if Node.js extension is missing or Node version is below 20.
+
+### Site down after build
+
+Build succeeding only creates `.next` — the **Node process** must be running separately.
+
+1. Plesk → **Node.js** → confirm status shows **Running** (not Stopped).
+2. **Disable Node.js** → wait 5s → **Enable Node.js** → **Restart App**.
+3. **Application URL:** `https://dreamytales.co.za` (HTTPS, not http).
+4. **Application root:** `/httpdocs` · **Startup file:** `start.js`
+5. Run **`npm run plesk:diagnose`** in Run Node.js commands — fix any FAIL lines.
+6. Open **Log files** in the Node.js panel — look for `[dreamy-tales] Starting Next.js on 0.0.0.0:…` or an error.
+7. If logs show the app started but the site is still the 1-grid parking page: **Hosting Settings** → confirm the domain uses this hosting (not parking-only).
+8. Still broken? Temporarily set **Document root** to `/httpdocs` (same as app root), **Restart App**, test again.
+
+After `git pull`, always: **Run script `build`** → **Restart App**.
 
 ### `nodenv: node: command not found` (npm error 127)
 
